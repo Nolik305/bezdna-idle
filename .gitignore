@@ -1,0 +1,47 @@
+# Зависимости
+node_modules/
+
+# Сборка
+dist/
+dist-ssr/
+
+# Локальные файлы окружения (секреты — только на сервере)
+.env
+.env.*
+!.env.example
+
+# Логи и временные файлы
+*.log
+npm-debug.log*
+
+# OS / редакторы
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Godot (если используется)
+.godot/
+/android/
+
+# Зива
+.ziva/
+
+# Инструменты Ziva-агента (не код игры)
+addons/ziva_agent/
+
+# Архивы
+*.tar.gz
+*.zip
+
+# Godot-копия спрайтов (React-клиент использует public/sprites/, это дубликат)
+assets/sprites/
+workspace.tar(5).tar
+
+# Godot-импорт-артефакты (React/Vite их не использует)
+*.import
+
+# Временные debug-файлы
+debug_battle.mjs
+debug_battle2.mjs
+sprite_preview.html

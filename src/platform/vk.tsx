@@ -186,7 +186,7 @@ export interface GuildSummary {
 
 const VkContext = createContext<VkContextValue | null>(null);
 // Единая точка конфигурации API-URL (и для серверных вызовов, и для отображения в UI).
-export const API_URL = import.meta.env.VITE_API_URL || "https://api.135.106.176.77.nip.io";
+export const API_URL = import.meta.env.VITE_API_URL || "https://135.106.211.85.nip.io";
 
 // VK передаёт launch-параметры в URL: #vk_app_id=...&vk_user_id=...&sign=...
 // (в части webview — в query-string, в нативном клиенте — во фрагменте). VKWebAppGetLaunchParams

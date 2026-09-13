@@ -958,11 +958,11 @@ export interface PetDef {
 }
 
 export const PETS: PetDef[] = [
-  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10 },
-  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20 },
-  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25 },
-  { id: "raven", name: "Ворон", icon: "raven", rarity: 4, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35 },
-  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50 },
+  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2 as Rarity, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10 },
+  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3 as Rarity, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20 },
+  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3 as Rarity, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25 },
+  { id: "raven", name: "Ворон", icon: "raven", rarity: 4 as Rarity, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35 },
+  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5 as Rarity, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50 },
 ];
 
 /* ================= РУНЫ ================= */

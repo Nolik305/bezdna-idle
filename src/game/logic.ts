@@ -2065,9 +2065,14 @@ export function reducer(s: GameState, a: Action): GameState {
     case "PET_EQUIP": {
       const pet = PETS.find(p => p.id === a.petId);
       if (!pet || !s.pet.unlocked || s.hero.level < pet.unlockLevel) return s;
+      // Инициализируем запись о питомце, если её нет
+      const petsData = { ...s.pet.pets };
+      if (!petsData[a.petId]) {
+        petsData[a.petId] = { level: 1, xp: 0, stars: 0 };
+      }
       return {
         ...s,
-        pet: { ...s.pet, petId: a.petId },
+        pet: { ...s.pet, equipped: a.petId, pets: petsData },
       };
     }
     

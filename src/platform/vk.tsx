@@ -185,8 +185,8 @@ export interface GuildSummary {
 }
 
 const VkContext = createContext<VkContextValue | null>(null);
-// Единая точка конфигурации API-URL (и для серверных вызовов, и для отображения в UI).
-export const API_URL = import.meta.env.VITE_API_URL || "https://135.106.211.85.nip.io";
+// Для работы через GitHub Pages без бэкенда оставим пустым - все сохранения будут в localStorage
+export const API_URL = "";
 
 // VK передаёт launch-параметры в URL: #vk_app_id=...&vk_user_id=...&sign=...
 // (в части webview — в query-string, в нативном клиенте — во фрагменте). VKWebAppGetLaunchParams
@@ -501,43 +501,47 @@ export function VkProvider({ children }: { children: ReactNode }) {
   };
 
   const loadGameState = async (): Promise<{ ok: boolean; state: GameState | null; revision?: number }> => {
-    if (!inVk || !launchParams) return { ok: false, state: null };
-    const response = await withTimeout(fetch(`${API_URL}/api/state`, {
-      headers: { "x-vk-launch-params": launchParams },
-    }), 8000).catch(() => null);
-    if (!response?.ok) return { ok: false, state: null };
-    const payload = await response.json().catch(() => null) as { state?: GameState | null; revision?: number } | null;
-    stateRevision.current = Number.isSafeInteger(payload?.revision) ? Number(payload?.revision) : 0;
-    return { ok: true, state: payload?.state ?? null, revision: stateRevision.current };
+    // Работаем без бэкенда - загружаем из localStorage по ID пользователя VK или создаём новое
+    if (typeof window === "undefined") return { ok: false, state: null };
+    
+    const vkUserId = user?.id || 'guest';
+    const storageKey = `bezdna_save_${vkUserId}`;
+    
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved) as GameState;
+        return { ok: true, state: parsed, revision: Date.now() };
+      }
+    } catch (e) {
+      console.error('Failed to load from localStorage:', e);
+    }
+    
+    return { ok: false, state: null };
   };
 
   const performSave = async (state: GameState): Promise<boolean> => {
-    if (!inVk || !launchParams) return false;
+    // Работаем без бэкенда - сохраняем в localStorage по ID пользователя VK
+    if (typeof window === "undefined") return false;
+    
     setCloudStatus("syncing");
     setCloudDetail("Сохранение…");
-    const stamped = { ...state, meta: { ...(state.meta || {}), savedAt: Date.now() } };
-    const response = await withTimeout(fetch(`${API_URL}/api/state`, {
-      method: "PUT",
-      headers: { "content-type": "application/json", "x-vk-launch-params": launchParams },
-      body: JSON.stringify({ state: stamped, baseRevision: stateRevision.current }),
-    }), 8000).catch(() => null);
-    if (response?.ok) {
-      const payload = await response.json().catch(() => null) as { revision?: number } | null;
-      const revision = payload?.revision;
-      if (!Number.isSafeInteger(revision)) {
-        setCloudStatus("error");
-        setCloudDetail("Сервер не вернул ревизию сейва");
-        return false;
-      }
-      stateRevision.current = Number(revision);
+    
+    const vkUserId = user?.id || 'guest';
+    const storageKey = `bezdna_save_${vkUserId}`;
+    
+    try {
+      const stamped = { ...state, meta: { ...(state.meta || {}), savedAt: Date.now() } };
+      localStorage.setItem(storageKey, JSON.stringify(stamped));
       setCloudStatus("saved");
       setCloudDetail("Сохранено ✓");
-    } else {
+      return true;
+    } catch (e) {
+      console.error('Failed to save to localStorage:', e);
       setCloudStatus("error");
-      const reason = response?.status === 409 ? "конфликт версии — загрузите игру заново" : response ? `HTTP ${response.status}` : "нет соединения";
-      setCloudDetail(`Не сохранено (${reason})`);
+      setCloudDetail("Не сохранено (ошибка localStorage)");
+      return false;
     }
-    return Boolean(response?.ok);
   };
 
   // Сохраняем только последний актуальный снимок: фоновые таймеры не должны

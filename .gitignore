@@ -68,3 +68,9 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Server (temporary push)
+server/.env
+server/node_modules/
+server/pm2-*.log
+!server/.env.example

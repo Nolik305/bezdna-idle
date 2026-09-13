@@ -7,6 +7,16 @@ import { BattleScreen } from "./ui/BattleScreen";
 import { HeroTab, InventoryTab } from "./ui/HeroScreens";
 import { SkillsScreen } from "./ui/SkillsScreen";
 import { MoreScreen } from "./ui/MoreScreen";
+import { PrestigeScreen } from "./ui/PrestigeScreen";
+import { AFKRewardsScreen } from "./ui/AFKRewardsScreen";
+import { BestiaryScreen } from "./ui/BestiaryScreen";
+import { GuildBossScreen } from "./ui/GuildBossScreen";
+import { BattlePassScreen } from "./ui/BattlePassScreen";
+import { PetScreen } from "./ui/PetScreen";
+import { TournamentScreen } from "./ui/TournamentScreen";
+import { RunesScreen } from "./ui/RunesScreen";
+import { BaseScreen } from "./ui/BaseScreen";
+import { SocialScreen } from "./ui/SocialScreen";
 import { BUILD_VERSION, BUILD_DATE } from "./buildInfo";
 import { RunScreen } from "./ui/RunScreen";
 import { DuelScreen } from "./ui/DuelScreen";
@@ -16,6 +26,7 @@ import { ChatPanel } from "./ui/ChatPanel";
 import { useVk, VkProvider } from "./platform/vk";
 
 type Tab = "battle" | "run" | "duel" | "party" | "hero" | "inv" | "skills" | "more";
+type ActiveScreen = Tab | "prestige" | "afk" | "bestiary" | "guildboss" | "battlepass" | "pet" | "tournament" | "runes" | "base" | "social";
 
 function CloudBadge() {
   const { inVk, cloudStatus, cloudDetail } = useVk();
@@ -147,9 +158,9 @@ function Toasts() {
   );
 }
 
-function Nav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
+function Nav({ tab, setTab }: { tab: ActiveScreen; setTab: (t: ActiveScreen) => void }) {
   const { s } = useGame();
-  const items: { id: Tab; n: string; i: string; badge?: boolean }[] = [
+  const items: { id: ActiveScreen; n: string; i: string; badge?: boolean }[] = [
     { id: "battle", n: "Поход", i: "sword" },
     { id: "run", n: "Рогалик", i: "route", badge: (s.shards > 0 || s.blood > 0) && !s.run.active },
     { id: "duel", n: "Дуэли", i: "crossed", badge: s.duel.tokens > 0 && s.duel.state === "idle" },
@@ -178,7 +189,7 @@ function Nav({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
 
 function Shell() {
   const { s, cloudBooted, cloudUnreachable, playOffline } = useGame();
-  const [tab, setTab] = useState<Tab>(() => s.run.active || s.modal?.t === "runpick" ? "run" : "battle");
+  const [activeScreen, setActiveScreen] = useState<ActiveScreen>(() => s.run.active || s.modal?.t === "runpick" ? "run" : "battle");
   if (!cloudBooted) return <LoadingScreen unreachable={cloudUnreachable} onPlayOffline={playOffline} />;
   return (
     <div className="h-full flex flex-col bg-dungeon bg-noise relative select-none" onContextMenu={e => e.preventDefault()}>
@@ -190,19 +201,29 @@ function Shell() {
       <div className="relative z-10 h-full max-w-md mx-auto w-full flex flex-col">
         <div className="px-3 pt-2"><HUD /></div>
         <main className="flex-1 overflow-y-auto scroll-slim overscroll-contain px-3 py-3">
-          <div key={tab} className="anim-rise">
-            {tab === "battle" && <BattleScreen />}
-            {tab === "run" && <RunScreen />}
-            {tab === "duel" && <DuelScreen />}
-            {tab === "party" && <PartyScreen />}
-            {tab === "hero" && <HeroTab />}
-            {tab === "inv" && <InventoryTab />}
-            {tab === "skills" && <SkillsScreen />}
-            {tab === "more" && <MoreScreen />}
+          <div key={activeScreen} className="anim-rise">
+            {activeScreen === "battle" && <BattleScreen />}
+            {activeScreen === "run" && <RunScreen />}
+            {activeScreen === "duel" && <DuelScreen />}
+            {activeScreen === "party" && <PartyScreen />}
+            {activeScreen === "hero" && <HeroTab />}
+            {activeScreen === "inv" && <InventoryTab />}
+            {activeScreen === "skills" && <SkillsScreen />}
+            {activeScreen === "more" && <MoreScreen />}
+            {activeScreen === "prestige" && <PrestigeScreen />}
+            {activeScreen === "afk" && <AFKRewardsScreen />}
+            {activeScreen === "bestiary" && <BestiaryScreen />}
+            {activeScreen === "guildboss" && <GuildBossScreen />}
+            {activeScreen === "battlepass" && <BattlePassScreen />}
+            {activeScreen === "pet" && <PetScreen />}
+            {activeScreen === "tournament" && <TournamentScreen />}
+            {activeScreen === "runes" && <RunesScreen />}
+            {activeScreen === "base" && <BaseScreen />}
+            {activeScreen === "social" && <SocialScreen />}
           </div>
           <div className="h-2" />
         </main>
-        <Nav tab={tab} setTab={setTab} />
+        <Nav tab={activeScreen} setTab={setActiveScreen} />
       </div>
       <Toasts />
       <Modals />

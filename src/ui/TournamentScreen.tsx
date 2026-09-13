@@ -6,6 +6,18 @@ export function TournamentScreen() {
   const { s, d } = useGame();
   const { tournament } = s;
 
+  // Защита от неинициализированных данных
+  if (!tournament || !tournament.leaderboard) {
+    return (
+      <div className="space-y-4">
+        <div className="panel p-4 text-center relative overflow-hidden bg-gradient-to-b from-orange-600/20 to-transparent">
+          <h2 className="text-xl font-display text-orange-400 tracking-widest">ТУРНИР</h2>
+          <p className="text-[10px] text-dim mt-1">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
   const daysLeft = Math.max(0, Math.ceil((tournament.endDate - Date.now()) / (1000 * 60 * 60 * 24)));
   const canFight = tournament.fightsLeft > 0;
 

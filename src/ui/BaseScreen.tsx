@@ -5,6 +5,17 @@ import { fmt } from "../game/logic";
 export function BaseScreen() {
   const { s, d } = useGame();
   const { base } = s;
+  
+  // Защита от неинициализированных данных
+  if (!base || !base.buildings) {
+    return (
+      <div className="panel p-8 text-center">
+        <Icon n="home" className="w-16 h-16 text-dim mx-auto mb-4" />
+        <h2 className="text-lg font-display text-fog">База</h2>
+        <p className="text-[11px] text-dim mt-2">Загрузка...</p>
+      </div>
+    );
+  }
 
   if (!base.unlocked) {
     return (

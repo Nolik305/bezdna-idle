@@ -7,6 +7,18 @@ export function BattlePassScreen() {
   const { s, d } = useGame();
   const { battlePass } = s;
 
+  // Защита от неинициализированных данных
+  if (!battlePass || !Array.isArray(battlePass.weeklyQuests)) {
+    return (
+      <div className="space-y-4">
+        <div className="panel p-4 text-center relative overflow-hidden bg-gradient-to-b from-purple-900/30 to-transparent">
+          <h2 className="text-xl font-display text-purple-300 tracking-widest">БОЕВОЙ ПРОПУСК</h2>
+          <p className="text-[10px] text-dim mt-1">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
+
   const daysLeft = Math.max(0, Math.ceil((battlePass.seasonEnd - Date.now()) / (1000 * 60 * 60 * 24)));
   const progressPct = (battlePass.level / 50) * 100;
 

@@ -5,6 +5,17 @@ import { PRESTIGE_BONUSES, PRESTIGE_TALENTS } from "../game/data";
 
 export function PrestigeScreen() {
   const { s, d } = useGame();
+
+  // Защита от неинициализированных данных
+  if (!prestige || !prestige.bonuses) {
+    return (
+      <div className="panel p-8 text-center">
+        <Icon n="crown" className="w-16 h-16 text-dim mx-auto mb-4" />
+        <h2 className="text-lg font-display text-fog">Престиж</h2>
+        <p className="text-[11px] text-dim mt-2">Загрузка...</p>
+      </div>
+    );
+  }
   const { prestige } = s;
 
   const totalBonus = Object.entries(prestige.bonuses).reduce((sum, [_, v]) => sum + v, 0);

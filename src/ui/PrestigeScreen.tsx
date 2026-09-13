@@ -95,7 +95,7 @@ export function PrestigeScreen() {
         </h3>
         <div className="space-y-2">
           {PRESTIGE_TALENTS.map((talent) => {
-            const owned = prestige.talents.includes(talent.id);
+            const owned = talent.id in prestige.talents;
             const canBuy = prestige.essence >= talent.cost && !owned && prestige.count >= talent.minPrestiges;
             return (
               <button

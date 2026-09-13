@@ -56,7 +56,7 @@ export function PetScreen() {
       {/* Level Up Button */}
       {pet.equipped && pet.canLevelUp && (
         <button
-          onClick={() => d({ type: "PET_LEVEL_UP", petId: pet.equipped })}
+          onClick={() => d({ type: "PET_LEVEL_UP", petId: pet.equipped! })}
           className="w-full panel p-4 flex items-center justify-center gap-3 hover:bg-green-500/10 transition-all border-green-500/30"
         >
           <Icon n="spark" className="w-6 h-6 text-green-400" />

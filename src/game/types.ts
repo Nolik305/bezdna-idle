@@ -248,6 +248,31 @@ export type Modal =
 
 export interface Toast { id: number; text: string; kind: "info" | "gold" | "loot" | "warn" | "gem"; }
 
+export interface PrestigeBonusDef {
+  id: string;
+  name: string;
+  icon: string;
+  desc: string;
+  costBase: number;
+  costMult: number;
+  baseCost: number;
+  maxLevel: number;
+  valuePerLevel: number;
+  description: string;
+}
+
+export interface PrestigeTalentDef {
+  id: string;
+  name: string;
+  icon: string;
+  max: number;
+  desc: (level: number) => string;
+  costBase: number;
+  cost: number;
+  minPrestiges: number;
+  description: string;
+}
+
 export interface PrestigeS {
   count: number; // количество престижей
   essence: number; // Эссенция Бездны — валюта престижа
@@ -260,12 +285,17 @@ export interface BestiaryEntry {
   name: string;
   kills: number;
   firstSeen: number;
+  discovered: boolean;
+  canClaim: boolean;
   claimed: boolean; // награда за первое обнаружение
 }
 
 export interface BestiaryS {
   entries: Record<string, BestiaryEntry>;
   collectionBonus: Partial<Record<StatKey, number>>; // бонусы коллекции
+  bonuses: { description: string; value: number }[]; // бонусы от собранных
+  maxKills: Record<string, number>; // максимальные убийства по мобам
+  milestones: number[]; // достигнутые вехи
 }
 
 export interface GuildBossS {
@@ -275,11 +305,20 @@ export interface GuildBossS {
   bossHp: number;
   bossMaxHp: number;
   bossDmg: number;
+  hp: number;
+  maxHp: number;
+  name: string;
+  level: number;
+  timeElapsed: number;
+  personalDamage: number;
+  attacksLeft: number;
   expiresAt: number; // timestamp окончания (24 часа)
   damageDealt: number; // урон игрока
   guildDamage: number; // общий урон гильдии
+  rewardPending: boolean;
+  rewardClaimed: boolean;
   claimed: boolean; // награда получена
-  leaderboard: { name: string; damage: number }[];
+  leaderboard: { name: string; damage: number; losses: number }[];
 }
 
 export interface BattlePassMission {
@@ -291,6 +330,7 @@ export interface BattlePassMission {
   progress: number;
   claimed: boolean;
   tier: number; // уровень BP для разблокировки
+  icon: string; // иконка награды
 }
 
 export interface BattlePassS {
@@ -298,6 +338,8 @@ export interface BattlePassS {
   level: number; // текущий уровень BP (1-50)
   xp: number; // опыт BP
   premium: boolean; // куплен премиум
+  seasonEnd: number; // окончание сезона
+  weeklyQuests: { id: string; description: string; progress: number; target: number; xpReward: number; icon: string; claimed: boolean }[]; // еженедельные квесты
   claimedFree: number[]; // забранные награды (бесплатная ветка)
   claimedPremium: number[]; // забранные награды (премиум ветка)
   missions: BattlePassMission[];
@@ -306,8 +348,14 @@ export interface BattlePassS {
 
 export interface PetS {
   unlocked: boolean;
-  petId: string | null; // экипированный питомец
+  equipped: string | null; // экипированный питомец
+  petId: string | null; // legacy (совместимость)
+  owned: string[]; // коллекция питомцев
   pets: Record<string, { level: number; xp: number; stars: number }>; // прогресс питомцев
+  canLevelUp: boolean;
+  level: number;
+  xp: number;
+  levelUpCost: number;
 }
 
 export interface TournamentS {
@@ -315,10 +363,14 @@ export interface TournamentS {
   tickets: number; // бесплатные билеты (10)
   wins: number;
   losses: number;
+  fightsLeft: number; // оставшихся боёв
   bestWins: number; // лучшее количество побед за сезон
   currency: number; // валюта турнира
+  endDate: number; // дата окончания турнира
   seasonEndsAt: number;
-  leaderboard: { name: string; wins: number; rating: number }[];
+  canClaimReward: boolean; // можно ли забрать награду
+  lastSeasonRank: number; // ранг прошлого сезона
+  leaderboard: { name: string; wins: number; losses: number; rating: number }[];
 }
 
 export interface RuneSlot {
@@ -329,6 +381,7 @@ export interface RuneSlot {
 export interface GearWithRunes {
   uid: number;
   runes: RuneSlot[]; // 3 гнезда на предмет
+  sockets: number; // количество активных гнёзд
 }
 
 export interface RunesS {
@@ -438,6 +491,7 @@ export interface GameState {
 
 export interface Stats {
   dmg: number;
+  dmgPct: number;
   dps: number;
   as: number;
   crit: number;

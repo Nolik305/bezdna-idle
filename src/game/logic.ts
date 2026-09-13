@@ -228,7 +228,7 @@ export function getStats(s: GameState): Stats {
   const offline = (dps / 10) * (1 + goldPct / 100) * (1 + offlinePct / 100);
 
   return {
-    dmg, dps, as, crit: Math.min(85, crit), critDmg, maxHp, armor, mit, goldPct, xpPct,
+    dmg, dps, as, crit: Math.min(85, crit), critDmg, maxHp, armor, mit, goldPct, xpPct, dmgPct: 0,
     luck: luck + luckBuff, regen, offline, lifesteal, dodge, dotPct,
     cooldownPct: Math.min(60, cooldownPct), extraSkillDamagePct,
   };
@@ -970,7 +970,7 @@ function toast(st: GameState, text: string, kind: "info" | "gold" | "loot" | "wa
 function pushLog(st: GameState, msg: string) {
   st.battle.log = [msg, ...st.battle.log].slice(0, 6);
 }
-function pushFx(st: GameState, text: string, kind: "dmg" | "crit" | "hurt" | "heal" | "gold" | "xp", x: number, y: number) {
+function pushFx(st: GameState, text: string, kind: "dmg" | "crit" | "hurt" | "heal" | "gold" | "xp" | "combo", x: number, y: number) {
   st.fxSeq += 1;
   st.battle.fx = [{ id: st.fxSeq, text, kind, x, y, life: 0.95 }, ...st.battle.fx].slice(0, 16);
 }
@@ -1263,6 +1263,17 @@ export function newGame(): GameState {
     godstone: null,
     duel: newDuel(),
     shopBuys: {}, lastSeen: Date.now(), uidSeq: 1, fxSeq: 1, toastSeq: 1,
+    // === НОВЫЕ СИСТЕМЫ ===
+    prestige: { count: 0, essence: 0, bonuses: {}, talents: {} },
+    bestiary: { entries: {}, collectionBonus: {}, bonuses: [], maxKills: {}, milestones: [] },
+    guildBoss: null,
+    battlePass: { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 },
+    pet: { unlocked: false, equipped: null, petId: null, owned: [], pets: {}, canLevelUp: false, level: 1, xp: 0, levelUpCost: 20 },
+    tournament: { active: false, tickets: 10, wins: 0, losses: 0, fightsLeft: 5, bestWins: 0, currency: 0, endDate: 0, seasonEndsAt: 0, canClaimReward: false, lastSeasonRank: 0, leaderboard: [] },
+    runes: { gear: {}, inventory: [] },
+    base: { unlocked: false, buildings: {}, resources: {}, lastCollectTime: 0 },
+    social: { friends: [], giftsReceived: [], giftsSent: [], referred: [], friendLeaderboard: [] },
+    afkRewards: { available: false, offlineTime: 0, options: [], claimed: false, multiplied: false },
   };
 }
 
@@ -2005,6 +2016,7 @@ export function reducer(s: GameState, a: Action): GameState {
         ...s,
         guildBoss: {
           ...s.guildBoss,
+          hp: newHp,
           bossHp: newHp,
           damageDealt: s.guildBoss.damageDealt + damage,
           guildDamage: s.guildBoss.guildDamage + damage,
@@ -2027,8 +2039,8 @@ export function reducer(s: GameState, a: Action): GameState {
       if (!reward || s.battlePass.claimedFree.includes(a.tier)) return s;
       if (s.battlePass.level < a.tier) return s;
       let newState = { ...s, battlePass: { ...s.battlePass, claimedFree: [...s.battlePass.claimedFree, a.tier] } };
-      if (reward.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + reward.amount };
-      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + reward.amount };
+      if (reward.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + (reward.amount || 0) };
+      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + (reward.amount || 0) };
       return newState;
     }
     
@@ -2037,7 +2049,7 @@ export function reducer(s: GameState, a: Action): GameState {
       if (!reward || !s.battlePass.premium || s.battlePass.claimedPremium.includes(a.tier)) return s;
       if (s.battlePass.level < a.tier) return s;
       let newState = { ...s, battlePass: { ...s.battlePass, claimedPremium: [...s.battlePass.claimedPremium, a.tier] } };
-      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + reward.amount };
+      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + (reward.amount || 0) };
       return newState;
     }
     

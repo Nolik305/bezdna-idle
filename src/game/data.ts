@@ -70,14 +70,14 @@ export interface PassiveDef {
   desc: (rank: number) => string; stat: string;
 }
 export const PASSIVES: PassiveDef[] = [
-  { id: "power", name: "Мощь", icon: "sword", max: 10, stat: "dmgPct", desc: r => `+${8 * r}% к урону` },
-  { id: "focus", name: "Фокус", icon: "target", max: 10, stat: "crit", desc: r => `+${(2.5 * r).toFixed(1)}% шанса крита` },
-  { id: "vitality", name: "Живучесть", icon: "heart", max: 10, stat: "hpPct", desc: r => `+${8 * r}% к здоровью` },
-  { id: "skin", name: "Каменная кожа", icon: "shield", max: 10, stat: "armor", desc: r => `+${6 * r} брони` },
-  { id: "greed", name: "Жадность", icon: "coin", max: 10, stat: "goldPct", desc: r => `+${8 * r}% золота с врагов` },
-  { id: "wisdom", name: "Мудрость", icon: "scroll", max: 10, stat: "xpPct", desc: r => `+${7 * r}% опыта` },
-  { id: "fortune", name: "Удача", icon: "clover", max: 10, stat: "luck", desc: r => `+${5 * r}% к шансу дропа` },
-  { id: "treasury", name: "Скрытая казна", icon: "chest", max: 10, stat: "offline", desc: r => `+${12 * r}% к офлайн-доходу` },
+  { id: "power", name: "Мощь", icon: "sword", max: 10, stat: "dmgPct" },
+  { id: "focus", name: "Фокус", icon: "target", max: 10, stat: "crit" },
+  { id: "vitality", name: "Живучесть", icon: "heart", max: 10, stat: "hpPct" },
+  { id: "skin", name: "Каменная кожа", icon: "shield", max: 10, stat: "armor" },
+  { id: "greed", name: "Жадность", icon: "coin", max: 10, stat: "goldPct" },
+  { id: "wisdom", name: "Мудрость", icon: "scroll", max: 10, stat: "xpPct" },
+  { id: "fortune", name: "Удача", icon: "clover", max: 10, stat: "luck" },
+  { id: "treasury", name: "Скрытая казна", icon: "chest", max: 10, stat: "offline" },
 ];
 
 /* ================= ZONES & MOBS ================= */
@@ -656,18 +656,18 @@ export interface RelicDef {
   skillLvl?: number; bossGold?: number;
 }
 export const RELICS: RelicDef[] = [
-  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 25, desc: r => `+${25 * r}% урона` },
-  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 18, desc: r => `+${18 * r}% скорости атаки` },
-  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 12, desc: r => `+${12 * r}% шанса крита` },
-  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 30, desc: r => `+${30 * r}% макс. HP` },
-  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 25, desc: r => `+${25 * r}% удачи` },
-  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 35, desc: r => `+${35 * r}% золота` },
-  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 30, desc: r => `+${30 * r}% опыта` },
-  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 8, desc: r => `Вампиризм: ${8 * r}% HP за убийство` },
-  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 60, desc: r => `Шипы: ${60 * r}% урона врагу за его удар` },
-  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 40, desc: r => `+${40 * r}% крит. урона` },
-  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1, desc: r => `+${r} к уровню всех скилов в забеге` },
-  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1, desc: r => `Золото с боссов ×${1 + r}` },
+  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 25 },
+  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 18 },
+  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 12 },
+  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 30 },
+  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 25 },
+  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 35 },
+  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 30 },
+  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 8 },
+  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 60 },
+  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 40 },
+  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1 },
+  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1 },
   { id: "cursed", name: "Проклятая сила", icon: "skull", max: 1, cursed: true, dmgPct: 60, hpPct: -25, desc: () => `+60% урона, но −25% макс. HP. Оно того стоит?` },
 ];
 
@@ -678,12 +678,12 @@ export interface MetaDef {
   dmgPct?: number; hpPct?: number; goldPct?: number; luck?: number; xpPct?: number; headstart?: number;
 }
 export const META: MetaDef[] = [
-  { id: "temper", name: "Закалка", icon: "sword", max: 10, cost: r => 25 * (r + 1), dmgPct: 5, desc: r => `+${5 * r}% урона (везде)` },
-  { id: "hide", name: "Шкура носорога", icon: "shield", max: 10, cost: r => 25 * (r + 1), hpPct: 6, desc: r => `+${6 * r}% HP (везде)` },
-  { id: "hunch", name: "Предчувствие", icon: "clover", max: 10, cost: r => 20 * (r + 1), luck: 6, desc: r => `+${6 * r}% удачи (везде)` },
-  { id: "greed", name: "Алчность", icon: "coin", max: 10, cost: r => 20 * (r + 1), goldPct: 10, desc: r => `+${10 * r}% золота (везде)` },
-  { id: "savant", name: "Мудрец", icon: "book", max: 10, cost: r => 20 * (r + 1), xpPct: 8, desc: r => `+${8 * r}% опыта (везде)` },
-  { id: "headstart", name: "Фора", icon: "spark", max: 3, cost: r => 60 * (r + 1), headstart: 1, desc: r => `Забег начинается с ${r} случайн. даром(ами)` },
+  { id: "temper", name: "Закалка", icon: "sword", max: 10, cost: r => 25 * (r + 1), dmgPct: 5 },
+  { id: "hide", name: "Шкура носорога", icon: "shield", max: 10, cost: r => 25 * (r + 1), hpPct: 6 },
+  { id: "hunch", name: "Предчувствие", icon: "clover", max: 10, cost: r => 20 * (r + 1), luck: 6 },
+  { id: "greed", name: "Алчность", icon: "coin", max: 10, cost: r => 20 * (r + 1), goldPct: 10 },
+  { id: "savant", name: "Мудрец", icon: "book", max: 10, cost: r => 20 * (r + 1), xpPct: 8 },
+  { id: "headstart", name: "Фора", icon: "spark", max: 3, cost: r => 60 * (r + 1), headstart: 1 },
 ];
 
 export const RUN_WAVES = 20;
@@ -867,20 +867,20 @@ export const PRESTIGE_CONFIG = {
 };
 
 export const PRESTIGE_BONUSES = [
-  { id: "dmgPct", name: "Сила Бездны", icon: "sword", desc: "+5% урона", costBase: 1, costMult: 1.5 },
-  { id: "hpPct", name: "Плоть Бездны", icon: "heart", desc: "+5% HP", costBase: 1, costMult: 1.5 },
-  { id: "goldPct", name: "Жадность Бездны", icon: "coin", desc: "+3% золота", costBase: 2, costMult: 1.6 },
-  { id: "xpPct", name: "Мудрость Бездны", icon: "book", desc: "+3% опыта", costBase: 2, costMult: 1.6 },
-  { id: "crit", name: "Точность Бездны", icon: "target", desc: "+1% крита", costBase: 3, costMult: 1.7 },
-  { id: "critDmg", name: "Ярость Бездны", icon: "skull", desc: "+2% крит. урона", costBase: 3, costMult: 1.7 },
+  { id: "dmgPct", name: "Сила Бездны", icon: "sword", desc: "+5% урона", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 5, description: "+5% урона" },
+  { id: "hpPct", name: "Плоть Бездны", icon: "heart", desc: "+5% HP", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 5, description: "+5% HP" },
+  { id: "goldPct", name: "Жадность Бездны", icon: "coin", desc: "+3% золота", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 3, description: "+3% золота" },
+  { id: "xpPct", name: "Мудрость Бездны", icon: "book", desc: "+3% опыта", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 3, description: "+3% опыта" },
+  { id: "crit", name: "Точность Бездны", icon: "target", desc: "+1% крита", costBase: 3, costMult: 1.7, baseCost: 3, maxLevel: 10, valuePerLevel: 1, description: "+1% крита" },
+  { id: "critDmg", name: "Ярость Бездны", icon: "skull", desc: "+2% крит. урона", costBase: 3, costMult: 1.7, baseCost: 3, maxLevel: 10, valuePerLevel: 2, description: "+2% крит. урона" },
 ];
 
 export const PRESTIGE_TALENTS = [
-  { id: "essence_boost", name: "Собиратель сущности", icon: "gem", max: 5, desc: r => `+${r * 10}% к получению эссенции`, costBase: 1 },
-  { id: "auto_potion", name: "Авто-зелье", icon: "flask", max: 3, desc: r => `Шанс ${r * 15}% авто-использования зелья при HP < 30%`, costBase: 2 },
-  { id: "luck_prestige", name: "Удача избранного", icon: "clover", max: 5, desc: r => `+${r * 2}% удачи`, costBase: 2 },
-  { id: "boss_damage", name: "Охотник на боссов", icon: "crown", max: 5, desc: r => `+${r * 5}% урона по боссам`, costBase: 3 },
-  { id: "offline_essence", name: "Эссенция офлайн", icon: "clock", max: 3, desc: r => `+${r * 20}% эссенции при prestige после офлайна`, costBase: 4 },
+  { id: "essence_boost", name: "Собиратель сущности", icon: "gem", max: 5, costBase: 1, cost: 50, minPrestiges: 0, description: "+10% к получению эссенции" },
+  { id: "auto_potion", name: "Авто-зелье", icon: "flask", max: 3, costBase: 2, cost: 100, minPrestiges: 0, description: "Авто-использование зелья" },
+  { id: "luck_prestige", name: "Удача избранного", icon: "clover", max: 5, costBase: 2, cost: 80, minPrestiges: 1, description: "+2% удачи" },
+  { id: "boss_damage", name: "Охотник на боссов", icon: "crown", max: 5, costBase: 3, cost: 150, minPrestiges: 2, description: "+5% урона по боссам" },
+  { id: "offline_essence", name: "Эссенция офлайн", icon: "clock", max: 3, costBase: 4, cost: 200, minPrestiges: 3, description: "+20% эссенции офлайн" },
 ];
 
 /* ================= БЕСТИАРИЙ ================= */
@@ -902,14 +902,14 @@ export const BATTLE_PASS_CONFIG = {
 };
 
 export const BATTLE_PASS_REWARDS_FREE = [
-  { tier: 1, type: "gold", amount: 5000 },
-  { tier: 2, type: "gems", amount: 10 },
-  { tier: 3, type: "gold", amount: 7500 },
-  { tier: 4, type: "potion", amount: 3 },
-  { tier: 5, type: "gold", amount: 10000 },
-  { tier: 6, type: "gems", amount: 15 },
-  { tier: 7, type: "gold", amount: 12500 },
-  { tier: 8, type: "shards", amount: 5 },
+  { tier: 1, type: "gold", amount: 5000, icon: "coin" },
+  { tier: 2, type: "gems", amount: 10, icon: "gem" },
+  { tier: 3, type: "gold", amount: 7500, icon: "coin" },
+  { tier: 4, type: "potion", amount: 3, icon: "flask" },
+  { tier: 5, type: "gold", amount: 10000, icon: "coin" },
+  { tier: 6, type: "gems", amount: 15, icon: "gem" },
+  { tier: 7, type: "gold", amount: 12500, icon: "coin" },
+  { tier: 8, type: "shards", amount: 5, icon: "crystal" },
   { tier: 9, type: "gold", amount: 15000 },
   { tier: 10, type: "gems", amount: 20 },
   { tier: 15, type: "gold", amount: 20000 },
@@ -923,21 +923,21 @@ export const BATTLE_PASS_REWARDS_FREE = [
 ];
 
 export const BATTLE_PASS_REWARDS_PREMIUM = [
-  { tier: 1, type: "item", rarity: 2 as Rarity, slot: "weapon" as BaseSlot },
-  { tier: 3, type: "aura", id: "flame", name: "Аура Пламени" },
-  { tier: 5, type: "title", id: "firelord", name: "Повелитель Огня" },
-  { tier: 7, type: "item", rarity: 3 as Rarity, slot: "amulet" as BaseSlot },
-  { tier: 10, type: "pet", id: "imp", name: "Бесёнок" },
-  { tier: 12, type: "gems", amount: 100 },
-  { tier: 15, type: "skin", id: "shadow_mage", name: "Теневой Маг" },
-  { tier: 17, type: "item", rarity: 3 as Rarity, slot: "armor" as BaseSlot },
-  { tier: 20, type: "aura", id: "storm", name: "Аура Бури" },
-  { tier: 25, type: "title", id: "voidwalker", name: "Идущий в Пустоте" },
-  { tier: 30, type: "pet", id: "wisp", name: "Огонёк" },
-  { tier: 35, type: "item", rarity: 4 as Rarity, slot: "ring" as BaseSlot },
-  { tier: 40, type: "skin", id: "golden_archer", name: "Золотая Лучница" },
-  { tier: 45, type: "aura", id: "abyss", name: "Аура Бездны" },
-  { tier: 50, type: "title", id: "abyss_lord", name: "Владыка Бездны" },
+  { tier: 1, type: "item", rarity: 2 as Rarity, slot: "weapon" as BaseSlot, icon: "weapon" },
+  { tier: 3, type: "aura", id: "flame", name: "Аура Пламени", icon: "flame" },
+  { tier: 5, type: "title", id: "firelord", name: "Повелитель Огня", icon: "crown" },
+  { tier: 7, type: "item", rarity: 3 as Rarity, slot: "amulet" as BaseSlot, icon: "amulet" },
+  { tier: 10, type: "pet", id: "imp", name: "Бесёнок", icon: "paw" },
+  { tier: 12, type: "gems", amount: 100, icon: "gem" },
+  { tier: 15, type: "skin", id: "shadow_mage", name: "Теневой Маг", icon: "wand" },
+  { tier: 17, type: "item", rarity: 3 as Rarity, slot: "armor" as BaseSlot, icon: "armor" },
+  { tier: 20, type: "aura", id: "storm", name: "Аура Бури", icon: "storm" },
+  { tier: 25, type: "title", id: "voidwalker", name: "Идущий в Пустоте", icon: "skull" },
+  { tier: 30, type: "pet", id: "wisp", name: "Огонёк", icon: "paw" },
+  { tier: 35, type: "item", rarity: 4 as Rarity, slot: "ring" as BaseSlot, icon: "ring" },
+  { tier: 40, type: "skin", id: "golden_archer", name: "Золотая Лучница", icon: "bow" },
+  { tier: 45, type: "aura", id: "abyss", name: "Аура Бездны", icon: "abyss" },
+  { tier: 50, type: "title", id: "abyss_lord", name: "Владыка Бездны", icon: "crown" },
 ];
 
 /* ================= ПИТОМЦЫ ================= */
@@ -951,15 +951,18 @@ export interface PetDef {
   dodge?: number;
   autoLoot?: boolean;
   goldPct?: number;
+  free: boolean; // бесплатный ли питомец
+  bonusDescription: string; // описание пассивного бонуса
+  levelUpCost: number; // стоимость повышения уровня
   unlockLevel: number;
 }
 
 export const PETS: PetDef[] = [
-  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2, passiveBonus: { dmgPct: 3 }, unlockLevel: 10 },
-  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3, passiveBonus: { xpPct: 8 }, autoLoot: true, unlockLevel: 20 },
-  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3, passiveBonus: { hpPct: 10, armor: 15 }, unlockLevel: 25 },
-  { id: "raven", name: "Ворон", icon: "raven", rarity: 4, passiveBonus: { crit: 5, critDmg: 10 }, unlockLevel: 35 },
-  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, unlockLevel: 50 },
+  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10 },
+  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20 },
+  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25 },
+  { id: "raven", name: "Ворон", icon: "raven", rarity: 4, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35 },
+  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50 },
 ];
 
 /* ================= РУНЫ ================= */
@@ -970,17 +973,18 @@ export interface RuneDef {
   color: string;
   stats: Partial<Record<StatKey, number>>;
   setBonus?: string;
+  description: string;
 }
 
 export const RUNES: RuneDef[] = [
-  { id: "rune_fire", name: "Руна Огня", icon: "flame", color: "#ff6b3d", stats: { dmgPct: 3 } },
-  { id: "rune_ice", name: "Руна Льда", icon: "snow", color: "#4cc3ff", stats: { armor: 8, regen: 0.5 } },
-  { id: "rune_shadow", name: "Руна Тени", icon: "skull", color: "#9b7bd8", stats: { crit: 2, critDmg: 8 } },
-  { id: "rune_life", name: "Руна Жизни", icon: "heart", color: "#4ade80", stats: { hpPct: 4, regen: 0.8 } },
-  { id: "rune_gold", name: "Руна Богатства", icon: "coin", color: "#f0b429", stats: { goldPct: 6 } },
-  { id: "rune_xp", name: "Руна Знаний", icon: "book", color: "#38bdf8", stats: { xpPct: 6 } },
-  { id: "rune_luck", name: "Руна Удачи", icon: "clover", color: "#8ee06e", stats: { luck: 8 } },
-  { id: "rune_as", name: "Руна Скорости", icon: "bolt", color: "#fbbf24", stats: { as: 8 } },
+  { id: "rune_fire", name: "Руна Огня", icon: "flame", color: "#ff6b3d", stats: { dmgPct: 3 }, description: "+3% к урону" },
+  { id: "rune_ice", name: "Руна Льда", icon: "snow", color: "#4cc3ff", stats: { armor: 8, regen: 0.5 }, description: "+8% брони, +0.5 регенерации" },
+  { id: "rune_shadow", name: "Руна Тени", icon: "skull", color: "#9b7bd8", stats: { crit: 2, critDmg: 8 }, description: "+2% крита, +8% крит. урона" },
+  { id: "rune_life", name: "Руна Жизни", icon: "heart", color: "#4ade80", stats: { hpPct: 4, regen: 0.8 }, description: "+4% HP, +0.8 регенерации" },
+  { id: "rune_gold", name: "Руна Богатства", icon: "coin", color: "#f0b429", stats: { goldPct: 6 }, description: "+6% к золоту" },
+  { id: "rune_xp", name: "Руна Знаний", icon: "book", color: "#38bdf8", stats: { xpPct: 6 }, description: "+6% к опыту" },
+  { id: "rune_luck", name: "Руна Удачи", icon: "clover", color: "#8ee06e", stats: { luck: 8 }, description: "+8% к удаче" },
+  { id: "rune_as", name: "Руна Скорости", icon: "bolt", color: "#fbbf24", stats: { as: 8 }, description: "+8% к скорости атаки" },
 ];
 
 export const RUNE_SETS = [
@@ -1034,6 +1038,8 @@ export const AFK_REWARD_POOL = [
   { type: "item", weight: 15, rarityMin: 1, rarityMax: 3 },
   { type: "essence", weight: 5, min: 1, max: 3 },
 ];
+
+export const AFK_REWARD_OPTIONS = AFK_REWARD_POOL;
 
 /* ================= GUILD BOSS ================= */
 export const GUILD_BOSS_CONFIG = {

@@ -1,25 +1,20 @@
+```
 # Compiled and build artifacts
 *.pyc
 __pycache__/
 *.o
 *.obj
-*.class
-*.exe
-*.dll
-*.so
-*.a
-*.out
+dist/
+build/
+target/
 
 # Dependencies
 .venv/
 venv/
 node_modules/
-.mypy_cache/
-.pytest_cache/
-dist/
-build/
-target/
-.gradle/
+.pnpm-store/
+.yarn/
+.yarn-cache/
 
 # Logs and temp files
 *.log
@@ -30,13 +25,15 @@ target/
 # Environment
 .env
 .env.local
-*.env.*
+.env.*
 
 # Editors
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# System files
+# OS
 .DS_Store
 Thumbs.db
 
@@ -45,7 +42,25 @@ coverage/
 htmlcov/
 .coverage
 
-# Compressed files
+# Python specific
+*.pyc
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+
+# Node specific
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+
+# Compression
 *.zip
 *.gz
 *.tar
@@ -55,22 +70,4 @@ htmlcov/
 *.7z
 *.rar
 *.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
-
-# Server (temporary push)
-server/.env
-server/node_modules/
-server/pm2-*.log
-!server/.env.example
+```

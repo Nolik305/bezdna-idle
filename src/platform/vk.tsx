@@ -300,13 +300,13 @@ export function VkProvider({ children }: { children: ReactNode }) {
             earlyLaunchParams = normalizeLaunchParams(response);
           } catch { /* повторим ниже после подготовки авторизации */ }
         }
-        await withTimeout(
-          bridge.send("VKWebAppSetViewSettings", {
-            status_bar_style: "light",
-            action_bar_color: "#0b0e13",
-          }).catch(() => undefined),
-          2000
-        );
+        // VKWebAppSetViewSettings может быть недоступен в старых клиентах VK или
+        // вызывать ошибки в некоторых окружениях. Вызываем его в фоне, не блокируя
+        // инициализацию — это только визуальные настройки (статус-бар, action bar).
+        bridge.send("VKWebAppSetViewSettings", {
+          status_bar_style: "light",
+          action_bar_color: "#0b0e13",
+        }).catch(() => undefined);
 
         profile = await withTimeout(
           bridge.send("VKWebAppGetUserInfo").catch(() => null) as Promise<VkUser | null>,

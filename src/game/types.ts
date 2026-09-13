@@ -35,7 +35,7 @@ export interface Enemy {
 export interface Fx {
   id: number;
   text: string;
-  kind: "dmg" | "crit" | "hurt" | "heal" | "gold" | "xp";
+  kind: "dmg" | "crit" | "hurt" | "heal" | "gold" | "xp" | "combo";
   x: number; // 0..100
   y: number; // 0..100
   life: number;
@@ -49,6 +49,15 @@ export interface Buff {
   luckAdd?: number;
   goldMult?: number;
   xpMult?: number;
+}
+
+export interface CombatStatus {
+  id: string;
+  label: string;
+  icon: string;
+  t: number;
+  side: "hero" | "enemy";
+  color: string;
 }
 
 export interface HeroS {
@@ -74,10 +83,12 @@ export interface BattleS {
   skillT: number; // таймер авто-каста скила
   cds: Record<string, number>;
   fx: Fx[];
+  statuses: CombatStatus[]; // активные статусы (баффы/дебаффы)
   log: string[];
   paused: boolean;
   respawnT: number; // автовоскрешение: сек до возрождения (0 = не мёртв)
   bossLocked: boolean; // босс отбил атаку — нужен ручной призыв
+  combo: number; // счётчик комбо-ударов (криты подряд)
 }
 
 export interface TotalsS {
@@ -237,6 +248,140 @@ export type Modal =
 
 export interface Toast { id: number; text: string; kind: "info" | "gold" | "loot" | "warn" | "gem"; }
 
+export interface PrestigeS {
+  count: number; // количество престижей
+  essence: number; // Эссенция Бездны — валюта престижа
+  bonuses: Record<string, number>; // постоянные бонусы (dmgPct, hpPct, goldPct, xpPct)
+  talents: Record<string, number>; // очки в дереве престиж-талантов
+}
+
+export interface BestiaryEntry {
+  key: string;
+  name: string;
+  kills: number;
+  firstSeen: number;
+  claimed: boolean; // награда за первое обнаружение
+}
+
+export interface BestiaryS {
+  entries: Record<string, BestiaryEntry>;
+  collectionBonus: Partial<Record<StatKey, number>>; // бонусы коллекции
+}
+
+export interface GuildBossS {
+  active: boolean;
+  bossKey: string;
+  bossName: string;
+  bossHp: number;
+  bossMaxHp: number;
+  bossDmg: number;
+  expiresAt: number; // timestamp окончания (24 часа)
+  damageDealt: number; // урон игрока
+  guildDamage: number; // общий урон гильдии
+  claimed: boolean; // награда получена
+  leaderboard: { name: string; damage: number }[];
+}
+
+export interface BattlePassMission {
+  id: string;
+  title: string;
+  desc: string;
+  metric: string;
+  target: number;
+  progress: number;
+  claimed: boolean;
+  tier: number; // уровень BP для разблокировки
+}
+
+export interface BattlePassS {
+  season: number; // номер сезона
+  level: number; // текущий уровень BP (1-50)
+  xp: number; // опыт BP
+  premium: boolean; // куплен премиум
+  claimedFree: number[]; // забранные награды (бесплатная ветка)
+  claimedPremium: number[]; // забранные награды (премиум ветка)
+  missions: BattlePassMission[];
+  expiresAt: number; // окончание сезона
+}
+
+export interface PetS {
+  unlocked: boolean;
+  petId: string | null; // экипированный питомец
+  pets: Record<string, { level: number; xp: number; stars: number }>; // прогресс питомцев
+}
+
+export interface TournamentS {
+  active: boolean;
+  tickets: number; // бесплатные билеты (10)
+  wins: number;
+  losses: number;
+  bestWins: number; // лучшее количество побед за сезон
+  currency: number; // валюта турнира
+  seasonEndsAt: number;
+  leaderboard: { name: string; wins: number; rating: number }[];
+}
+
+export interface RuneSlot {
+  runeId: string | null;
+  rank: number;
+}
+
+export interface GearWithRunes {
+  uid: number;
+  runes: RuneSlot[]; // 3 гнезда на предмет
+}
+
+export interface RunesS {
+  gear: Record<number, GearWithRunes>; // привязка рун к UID предмета
+  inventory: { runeId: string; count: number }[];
+}
+
+export interface BaseBuilding {
+  id: string;
+  level: number;
+  productionRate: number; // ресурсов в час
+  assignedHero: ClassId | null;
+}
+
+export interface BaseS {
+  unlocked: boolean;
+  buildings: Record<string, BaseBuilding>;
+  resources: Record<string, number>;
+  lastCollectTime: number;
+}
+
+export interface FriendGift {
+  from: string;
+  timestamp: number;
+  claimed: boolean;
+  reward: { gold?: number; gems?: number };
+}
+
+export interface SocialS {
+  friends: string[]; // список друзей (VK IDs)
+  giftsReceived: FriendGift[];
+  giftsSent: string[]; // кому отправили сегодня
+  referred: string[]; // приглашённые друзья
+  friendLeaderboard: { name: string; power: number; zone: number }[];
+}
+
+export interface AFKRewardOption {
+  id: string;
+  type: "gold" | "xp" | "item" | "gems";
+  amount: number;
+  rarity?: Rarity;
+  itemId?: number;
+  multiplyAvailable: boolean; // можно удвоить рекламой
+}
+
+export interface AFKRewardsS {
+  available: boolean;
+  offlineTime: number; // секунд офлайн
+  options: AFKRewardOption[];
+  claimed: boolean;
+  multiplied: boolean; // было ли удвоение
+}
+
 export interface GameState {
   v: number;
   hero: HeroS;
@@ -278,6 +423,17 @@ export interface GameState {
   uidSeq: number;
   fxSeq: number;
   toastSeq: number;
+  // === НОВЫЕ СИСТЕМЫ ===
+  prestige: PrestigeS; // система престижа
+  bestiary: BestiaryS; // коллекция/бестиарий
+  guildBoss: GuildBossS | null; // гильдейский босс
+  battlePass: BattlePassS; // боевой пропуск
+  pet: PetS; // питомцы
+  tournament: TournamentS; // PvP турниры
+  runes: RunesS; // руны/самоцветы
+  base: BaseS; // idle-ферма/база
+  social: SocialS; // социальные функции
+  afkRewards: AFKRewardsS; // AFK-награды с выбором
 }
 
 export interface Stats {
@@ -352,4 +508,27 @@ export type Action =
   | { type: "CRAFT_SLOT"; id: string; slot: Slot }
   | { type: "CLOSE_MODAL" }
   | { type: "DISMISS_TOAST"; id: number }
-  | { type: "RESET" };
+  | { type: "RESET" }
+  // === НОВЫЕ ДЕЙСТВИЯ ===
+  | { type: "PRESTIGE_DO" }
+  | { type: "PRESTIGE_BUY_BONUS"; stat: string }
+  | { type: "PRESTIGE_BUY_TALENT"; talentId: string }
+  | { type: "BESTIARY_CLAIM"; mobKey: string }
+  | { type: "GUILD_BOSS_ATTACK" }
+  | { type: "GUILD_BOSS_CLAIM" }
+  | { type: "BATTLE_PASS_CLAIM_FREE"; tier: number }
+  | { type: "BATTLE_PASS_CLAIM_PREMIUM"; tier: number }
+  | { type: "BATTLE_PASS_BUY_PREMIUM" }
+  | { type: "PET_EQUIP"; petId: string }
+  | { type: "PET_LEVEL_UP"; petId: string }
+  | { type: "TOURNAMENT_FIGHT" }
+  | { type: "TOURNAMENT_CLAIM_REWARD"; position: number }
+  | { type: "RUNE_INSERT"; gearUid: number; slotIndex: number; runeId: string }
+  | { type: "RUNE_REMOVE"; gearUid: number; slotIndex: number }
+  | { type: "BASE_COLLECT" }
+  | { type: "BASE_UPGRADE_BUILDING"; buildingId: string }
+  | { type: "BASE_ASSIGN_HERO"; buildingId: string; classId: ClassId | null }
+  | { type: "SOCIAL_SEND_GIFT"; friendId: string }
+  | { type: "SOCIAL_CLAIM_GIFT"; giftIndex: number }
+  | { type: "SOCIAL_INVITE_FRIEND"; friendId: string }
+  | { type: "AFK_REWARDS_CLAIM"; optionIndex: number; multiply: boolean };

@@ -12,6 +12,7 @@ const fxStyle: Record<string, string> = {
   heal: "text-arc font-display text-xl",
   gold: "text-gold text-sm font-bold",
   xp: "text-arc text-xs font-bold",
+  combo: "text-r3 font-display text-3xl font-bold drop-shadow-lg",
 };
 
 export function BattleScreen() {

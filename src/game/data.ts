@@ -857,3 +857,163 @@ export function activeSeasonalEvent(now = Date.now()): SeasonalEventDef | null {
   hits.sort((a, b) => b.endTs - a.endTs);
   return hits[0];
 }
+
+/* ================= ПРЕСТИЖ ================= */
+export const PRESTIGE_CONFIG = {
+  minZone: 15, // минимальная зона для первого престижа
+  essencePerZone: 2, // эссенции за зону при сбросе
+  baseBonusPct: 5, // базовый бонус к урону/HP за престиж
+  talentPointsPerPrestige: 3, // очков талантов за престиж
+};
+
+export const PRESTIGE_BONUSES = [
+  { id: "dmgPct", name: "Сила Бездны", icon: "sword", desc: "+5% урона", costBase: 1, costMult: 1.5 },
+  { id: "hpPct", name: "Плоть Бездны", icon: "heart", desc: "+5% HP", costBase: 1, costMult: 1.5 },
+  { id: "goldPct", name: "Жадность Бездны", icon: "coin", desc: "+3% золота", costBase: 2, costMult: 1.6 },
+  { id: "xpPct", name: "Мудрость Бездны", icon: "book", desc: "+3% опыта", costBase: 2, costMult: 1.6 },
+  { id: "crit", name: "Точность Бездны", icon: "target", desc: "+1% крита", costBase: 3, costMult: 1.7 },
+  { id: "critDmg", name: "Ярость Бездны", icon: "skull", desc: "+2% крит. урона", costBase: 3, costMult: 1.7 },
+];
+
+export const PRESTIGE_TALENTS = [
+  { id: "essence_boost", name: "Собиратель сущности", icon: "gem", max: 5, desc: r => `+${r * 10}% к получению эссенции`, costBase: 1 },
+  { id: "auto_potion", name: "Авто-зелье", icon: "flask", max: 3, desc: r => `Шанс ${r * 15}% авто-использования зелья при HP < 30%`, costBase: 2 },
+  { id: "luck_prestige", name: "Удача избранного", icon: "clover", max: 5, desc: r => `+${r * 2}% удачи`, costBase: 2 },
+  { id: "boss_damage", name: "Охотник на боссов", icon: "crown", max: 5, desc: r => `+${r * 5}% урона по боссам`, costBase: 3 },
+  { id: "offline_essence", name: "Эссенция офлайн", icon: "clock", max: 3, desc: r => `+${r * 20}% эссенции при prestige после офлайна`, costBase: 4 },
+];
+
+/* ================= БЕСТИАРИЙ ================= */
+export const BESTIARY_BONUSES = [
+  { threshold: 5, bonus: { dmgPct: 1 }, desc: "+1% урона за 5 уникальных монстров" },
+  { threshold: 10, bonus: { hpPct: 2 }, desc: "+2% HP за 10 уникальных монстров" },
+  { threshold: 15, bonus: { crit: 2 }, desc: "+2% крита за 15 уникальных монстров" },
+  { threshold: 20, bonus: { goldPct: 5 }, desc: "+5% золота за 20 уникальных монстров" },
+  { threshold: 25, bonus: { xpPct: 5 }, desc: "+5% опыта за 25 уникальных монстров" },
+];
+
+/* ================= BATTLE PASS ================= */
+export const BATTLE_PASS_CONFIG = {
+  seasonDurationDays: 28,
+  maxLevel: 50,
+  xpPerLevel: 1000,
+  xpLevelMult: 1.08,
+  premiumPrice: 499, // кристаллы
+};
+
+export const BATTLE_PASS_REWARDS_FREE = [
+  { tier: 1, type: "gold", amount: 5000 },
+  { tier: 2, type: "gems", amount: 10 },
+  { tier: 3, type: "gold", amount: 7500 },
+  { tier: 4, type: "potion", amount: 3 },
+  { tier: 5, type: "gold", amount: 10000 },
+  { tier: 6, type: "gems", amount: 15 },
+  { tier: 7, type: "gold", amount: 12500 },
+  { tier: 8, type: "shards", amount: 5 },
+  { tier: 9, type: "gold", amount: 15000 },
+  { tier: 10, type: "gems", amount: 20 },
+  { tier: 15, type: "gold", amount: 20000 },
+  { tier: 20, type: "shards", amount: 10 },
+  { tier: 25, type: "gold", amount: 25000 },
+  { tier: 30, type: "gems", amount: 30 },
+  { tier: 35, type: "gold", amount: 30000 },
+  { tier: 40, type: "shards", amount: 15 },
+  { tier: 45, type: "gold", amount: 40000 },
+  { tier: 50, type: "gems", amount: 50 },
+];
+
+export const BATTLE_PASS_REWARDS_PREMIUM = [
+  { tier: 1, type: "item", rarity: 2 as Rarity, slot: "weapon" as BaseSlot },
+  { tier: 3, type: "aura", id: "flame", name: "Аура Пламени" },
+  { tier: 5, type: "title", id: "firelord", name: "Повелитель Огня" },
+  { tier: 7, type: "item", rarity: 3 as Rarity, slot: "amulet" as BaseSlot },
+  { tier: 10, type: "pet", id: "imp", name: "Бесёнок" },
+  { tier: 12, type: "gems", amount: 100 },
+  { tier: 15, type: "skin", id: "shadow_mage", name: "Теневой Маг" },
+  { tier: 17, type: "item", rarity: 3 as Rarity, slot: "armor" as BaseSlot },
+  { tier: 20, type: "aura", id: "storm", name: "Аура Бури" },
+  { tier: 25, type: "title", id: "voidwalker", name: "Идущий в Пустоте" },
+  { tier: 30, type: "pet", id: "wisp", name: "Огонёк" },
+  { tier: 35, type: "item", rarity: 4 as Rarity, slot: "ring" as BaseSlot },
+  { tier: 40, type: "skin", id: "golden_archer", name: "Золотая Лучница" },
+  { tier: 45, type: "aura", id: "abyss", name: "Аура Бездны" },
+  { tier: 50, type: "title", id: "abyss_lord", name: "Владыка Бездны" },
+];
+
+/* ================= ПИТОМЦЫ ================= */
+export interface PetDef {
+  id: string;
+  name: string;
+  icon: string;
+  rarity: Rarity;
+  passiveBonus: Partial<Record<StatKey, number>>;
+  lifesteal?: number;
+  dodge?: number;
+  autoLoot?: boolean;
+  goldPct?: number;
+  unlockLevel: number;
+}
+
+export const PETS: PetDef[] = [
+  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2, passiveBonus: { dmgPct: 3 }, unlockLevel: 10 },
+  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3, passiveBonus: { xpPct: 8 }, autoLoot: true, unlockLevel: 20 },
+  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3, passiveBonus: { hpPct: 10, armor: 15 }, unlockLevel: 25 },
+  { id: "raven", name: "Ворон", icon: "raven", rarity: 4, passiveBonus: { crit: 5, critDmg: 10 }, unlockLevel: 35 },
+  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, unlockLevel: 50 },
+];
+
+/* ================= РУНЫ ================= */
+export interface RuneDef {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  stats: Partial<Record<StatKey, number>>;
+  setBonus?: string;
+}
+
+export const RUNES: RuneDef[] = [
+  { id: "rune_fire", name: "Руна Огня", icon: "flame", color: "#ff6b3d", stats: { dmgPct: 3 } },
+  { id: "rune_ice", name: "Руна Льда", icon: "snow", color: "#4cc3ff", stats: { armor: 8, regen: 0.5 } },
+  { id: "rune_shadow", name: "Руна Тени", icon: "skull", color: "#9b7bd8", stats: { crit: 2, critDmg: 8 } },
+  { id: "rune_life", name: "Руна Жизни", icon: "heart", color: "#4ade80", stats: { hpPct: 4, regen: 0.8 } },
+  { id: "rune_gold", name: "Руна Богатства", icon: "coin", color: "#f0b429", stats: { goldPct: 6 } },
+  { id: "rune_xp", name: "Руна Знаний", icon: "book", color: "#38bdf8", stats: { xpPct: 6 } },
+  { id: "rune_luck", name: "Руна Удачи", icon: "clover", color: "#8ee06e", stats: { luck: 8 } },
+  { id: "rune_as", name: "Руна Скорости", icon: "bolt", color: "#fbbf24", stats: { as: 8 } },
+];
+
+export const RUNE_SETS = [
+  { name: "Огненный шторм", runes: ["rune_fire", "rune_fire", "rune_shadow"], bonus: { dmgPct: 15, dotPct: 0.5 } },
+  { name: "Ледяная крепость", runes: ["rune_ice", "rune_ice", "rune_life"], bonus: { armor: 50, regen: 2 } },
+  { name: "Золотая лихорадка", runes: ["rune_gold", "rune_luck", "rune_xp"], bonus: { goldPct: 20, xpPct: 15 } },
+];
+
+/* ================= BASE BUILDINGS ================= */
+export const BASE_BUILDINGS = [
+  { id: "mine", name: "Шахта", icon: "pickaxe", baseCost: 1000, upgradeMult: 1.5, production: { ore: 100 } },
+  { id: "lumber", name: "Лесопилка", icon: "tree", baseCost: 800, upgradeMult: 1.4, production: { wood: 120 } },
+  { id: "farm", name: "Ферма", icon: "wheat", baseCost: 600, upgradeMult: 1.3, production: { food: 150 } },
+  { id: "barracks", name: "Казарма", icon: "shield", baseCost: 2000, upgradeMult: 1.6, production: {} },
+  { id: "vault", name: "Хранилище", icon: "chest", baseCost: 1500, upgradeMult: 1.4, production: {} },
+];
+
+/* ================= TOURNAMENT ================= */
+export const TOURNAMENT_CONFIG = {
+  freeTickets: 10,
+  ticketRefillDays: 7,
+  currencyPerWin: 10,
+  currencyPerLoss: 2,
+  seasonDurationDays: 14,
+};
+
+export const TOURNAMENT_REWARDS = [
+  { position: 1, currency: 500, title: "Чемпион Арены" },
+  { position: 2, currency: 300, title: "Претендент" },
+  { position: 3, currency: 200, title: "Гладиатор" },
+  { position: 5, currency: 150 },
+  { position: 10, currency: 100 },
+  { position: 25, currency: 50 },
+  { position: 50, currency: 30 },
+  { position: 100, currency: 15 },
+];

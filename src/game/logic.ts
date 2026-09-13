@@ -11,6 +11,14 @@ import {
   RESOURCES, ZONE_RESOURCES, CRAFT_RECIPES,
   activeSeasonalEvent, type SeasonalEventDef,
   type SetDef,
+  // === НОВЫЕ ИМПОРТЫ ===
+  PRESTIGE_CONFIG, PRESTIGE_BONUSES, PRESTIGE_TALENTS,
+  BESTIARY_BONUSES,
+  BATTLE_PASS_CONFIG, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM,
+  PETS,
+  RUNES, RUNE_SETS,
+  BASE_BUILDINGS,
+  TOURNAMENT_CONFIG, TOURNAMENT_REWARDS,
 } from "./data";
 import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
 import { getCustomSets, getCustomItems, rollCustomItem, getCustomItemById, getCustomSetById } from "./customContent";
@@ -987,7 +995,16 @@ function heroHit(st: GameState, stats: Stats, mult: number) {
   if (!e) return;
   const isCrit = Math.random() * 100 < stats.crit;
   let dmg = stats.dmg * mult * (0.9 + Math.random() * 0.2);
-  if (isCrit) dmg *= stats.critDmg / 100;
+  if (isCrit) {
+    dmg *= stats.critDmg / 100;
+    st.battle.combo += 1; // увеличиваем комбо при крите
+    if (st.battle.combo >= 3 && Math.random() < 0.3) {
+      // шанс показать комбо-эффект при 3+ критах подряд
+      pushFx(st, `x${st.battle.combo}!`, "combo", 50, 15);
+    }
+  } else {
+    st.battle.combo = 0; // сброс комбо при не-крите
+  }
   const d = Math.max(1, Math.round(dmg));
   st.battle.enemy = { ...e, hp: e.hp - d };
   if (stats.lifesteal > 0) st.hero.hp = Math.min(stats.maxHp, st.hero.hp + d * stats.lifesteal / 100);
@@ -1075,6 +1092,7 @@ function killEnemy(st: GameState, stats: Stats) {
   if (!e) return;
   st.battle.enemy = null;
   st.totals.kills += 1;
+  st.battle.combo = 0; // сброс комбо после убийства
   st.daily.kills += 1;
   st.weekly.kills += 1;
   gainSeasonal(st, "kills", 1);
@@ -1221,7 +1239,7 @@ export function newGame(): GameState {
     hero: { classId: "mage", name: "Бродяга", level: 1, xp: 0, skillPoints: 1, gold: 100, gems: 10, potions: 2, hp: 95 },
     equip: { weapon: null, helm: null, amulet: null, armor: null, gloves: null, boots: null, ring1: null, ring2: null },
     inv: [], skills: {}, passives: {},
-    battle: { zone: 0, wave: 1, enemy: null, heroT: 0, enemyT: 0, dotDps: 0, dotT: 0, skillT: 4, cds: {}, fx: [], log: [], paused: false, respawnT: 0, bossLocked: false },
+    battle: { zone: 0, wave: 1, enemy: null, heroT: 0, enemyT: 0, dotDps: 0, dotT: 0, skillT: 4, cds: {}, fx: [], statuses: [], log: [], paused: false, respawnT: 0, bossLocked: false, combo: 0 },
     zones: 1, bossDone: ZONES.map(() => false),
     totals: { kills: 0, bosses: 0, crits: 0, goldEarned: 0, dmgDealt: 0, items: 0, legendaries: 0, maxWave: 0, deaths: 0, casts: 0, potions: 0, events: 0, questsDone: 0, partyWins: 0, setPieces: 0 },
     achClaimed: [], questsClaimed: [], resources: {}, buffs: [], toasts: [],
@@ -1277,10 +1295,10 @@ export function reducer(s: GameState, a: Action): GameState {
 
     case "SET_ZONE": {
       if (a.zone >= s.zones || a.zone === s.battle.zone) return s;
-      const st = { ...s, battle: { ...s.battle, cds: { ...s.battle.cds }, fx: [...s.battle.fx], log: [...s.battle.log] } };
+      const st = { ...s, battle: { ...s.battle, cds: { ...s.battle.cds }, fx: [...s.battle.fx], statuses: [], log: [...s.battle.log] } };
       st.battle.zone = a.zone;
       st.battle.wave = 1;
-      st.battle.heroT = 0; st.battle.enemyT = 0; st.battle.dotT = 0; st.battle.paused = false; st.battle.respawnT = 0;
+      st.battle.heroT = 0; st.battle.enemyT = 0; st.battle.dotT = 0; st.battle.paused = false; st.battle.respawnT = 0; st.battle.combo = 0;
       st.battle.enemy = spawnEnemy(a.zone, 1);
       pushLog(st, `Вы вошли в «${ZONES[a.zone].name}»`);
       return st;
@@ -1901,6 +1919,318 @@ export function reducer(s: GameState, a: Action): GameState {
       fresh.meta = { ...(fresh.meta || {}), cloudReset: Date.now() };
       return fresh;
     }
+    
+    // === НОВЫЕ ДЕЙСТВИЯ ===
+    case "PRESTIGE_DO": {
+      if (s.battle.zone < PRESTIGE_CONFIG.minZone) return s;
+      const essenceGain = Math.floor(s.battle.zone * PRESTIGE_CONFIG.essencePerZone);
+      const talentPoints = s.prestige.count * PRESTIGE_CONFIG.talentPointsPerPrestige;
+      return {
+        ...s,
+        prestige: {
+          count: s.prestige.count + 1,
+          essence: s.prestige.essence + essenceGain,
+          bonuses: s.prestige.bonuses,
+          talents: s.prestige.talents,
+        },
+        // Сброс прогресса
+        battle: { ...newGame().battle },
+        hero: { ...newGame().hero, level: 1, xp: 0 },
+        zones: PRESTIGE_CONFIG.minZone - 1,
+        bossDone: new Array(PRESTIGE_CONFIG.minZone).fill(false),
+        meta: { ...s.meta, prestigeCount: s.prestige.count + 1 },
+      };
+    }
+    
+    case "PRESTIGE_BUY_BONUS": {
+      const bonusDef = PRESTIGE_BONUSES.find(b => b.id === a.stat);
+      if (!bonusDef) return s;
+      const currentRank = s.prestige.bonuses[a.stat] || 0;
+      const cost = Math.floor(bonusDef.costBase * Math.pow(bonusDef.costMult, currentRank));
+      if (s.prestige.essence < cost) return s;
+      return {
+        ...s,
+        prestige: {
+          ...s.prestige,
+          essence: s.prestige.essence - cost,
+          bonuses: { ...s.prestige.bonuses, [a.stat]: currentRank + 1 },
+        },
+      };
+    }
+    
+    case "PRESTIGE_BUY_TALENT": {
+      const talentDef = PRESTIGE_TALENTS.find(t => t.id === a.talentId);
+      if (!talentDef) return s;
+      const currentRank = s.prestige.talents[a.talentId] || 0;
+      if (currentRank >= talentDef.max) return s;
+      const cost = talentDef.costBase * (currentRank + 1);
+      const totalTalentPoints = Object.values(s.prestige.talents).reduce((sum, v) => sum + v, 0);
+      const availablePoints = s.prestige.count * PRESTIGE_CONFIG.talentPointsPerPrestige - totalTalentPoints;
+      if (availablePoints < cost) return s;
+      return {
+        ...s,
+        prestige: {
+          ...s.prestige,
+          talents: { ...s.prestige.talents, [a.talentId]: currentRank + 1 },
+        },
+      };
+    }
+    
+    case "BESTIARY_CLAIM": {
+      const entry = s.bestiary.entries[a.mobKey];
+      if (!entry || entry.claimed) return s;
+      return {
+        ...s,
+        bestiary: {
+          ...s.bestiary,
+          entries: {
+            ...s.bestiary.entries,
+            [a.mobKey]: { ...entry, claimed: true },
+          },
+        },
+        hero: { ...s.hero, gold: s.hero.gold + 500 },
+      };
+    }
+    
+    case "GUILD_BOSS_ATTACK": {
+      if (!s.guildBoss || !s.guildBoss.active) return s;
+      const stats = getStats(s);
+      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * 10);
+      const newHp = Math.max(0, s.guildBoss.bossHp - damage);
+      return {
+        ...s,
+        guildBoss: {
+          ...s.guildBoss,
+          bossHp: newHp,
+          damageDealt: s.guildBoss.damageDealt + damage,
+          guildDamage: s.guildBoss.guildDamage + damage,
+        },
+      };
+    }
+    
+    case "GUILD_BOSS_CLAIM": {
+      if (!s.guildBoss || !s.guildBoss.active || s.guildBoss.claimed) return s;
+      const reward = Math.floor(s.guildBoss.damageDealt / 1000);
+      return {
+        ...s,
+        guildBoss: { ...s.guildBoss, claimed: true },
+        hero: { ...s.hero, gold: s.hero.gold + reward },
+      };
+    }
+    
+    case "BATTLE_PASS_CLAIM_FREE": {
+      const reward = BATTLE_PASS_REWARDS_FREE.find(r => r.tier === a.tier);
+      if (!reward || s.battlePass.claimedFree.includes(a.tier)) return s;
+      if (s.battlePass.level < a.tier) return s;
+      let newState = { ...s, battlePass: { ...s.battlePass, claimedFree: [...s.battlePass.claimedFree, a.tier] } };
+      if (reward.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + reward.amount };
+      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + reward.amount };
+      return newState;
+    }
+    
+    case "BATTLE_PASS_CLAIM_PREMIUM": {
+      const reward = BATTLE_PASS_REWARDS_PREMIUM.find(r => r.tier === a.tier);
+      if (!reward || !s.battlePass.premium || s.battlePass.claimedPremium.includes(a.tier)) return s;
+      if (s.battlePass.level < a.tier) return s;
+      let newState = { ...s, battlePass: { ...s.battlePass, claimedPremium: [...s.battlePass.claimedPremium, a.tier] } };
+      if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + reward.amount };
+      return newState;
+    }
+    
+    case "BATTLE_PASS_BUY_PREMIUM": {
+      if (s.battlePass.premium || s.hero.gems < BATTLE_PASS_CONFIG.premiumPrice) return s;
+      return {
+        ...s,
+        battlePass: { ...s.battlePass, premium: true },
+        hero: { ...s.hero, gems: s.hero.gems - BATTLE_PASS_CONFIG.premiumPrice },
+      };
+    }
+    
+    case "PET_EQUIP": {
+      const pet = PETS.find(p => p.id === a.petId);
+      if (!pet || !s.pet.unlocked || s.hero.level < pet.unlockLevel) return s;
+      return {
+        ...s,
+        pet: { ...s.pet, petId: a.petId },
+      };
+    }
+    
+    case "PET_LEVEL_UP": {
+      const petData = s.pet.pets[a.petId];
+      if (!petData) return s;
+      const xpNeeded = Math.floor(100 * Math.pow(1.5, petData.level));
+      if (petData.xp < xpNeeded) return s;
+      return {
+        ...s,
+        pet: {
+          ...s.pet,
+          pets: {
+            ...s.pet.pets,
+            [a.petId]: { ...petData, level: petData.level + 1, xp: petData.xp - xpNeeded },
+          },
+        },
+      };
+    }
+    
+    case "TOURNAMENT_FIGHT": {
+      if (!s.tournament.active || s.tournament.tickets <= 0) return s;
+      const win = Math.random() < 0.5;
+      const currencyGain = win ? TOURNAMENT_CONFIG.currencyPerWin : TOURNAMENT_CONFIG.currencyPerLoss;
+      return {
+        ...s,
+        tournament: {
+          ...s.tournament,
+          tickets: s.tournament.tickets - 1,
+          wins: win ? s.tournament.wins + 1 : s.tournament.wins,
+          losses: win ? s.tournament.losses : s.tournament.losses + 1,
+          bestWins: Math.max(s.tournament.bestWins, win ? s.tournament.wins + 1 : s.tournament.wins),
+          currency: s.tournament.currency + currencyGain,
+        },
+      };
+    }
+    
+    case "TOURNAMENT_CLAIM_REWARD": {
+      const reward = TOURNAMENT_REWARDS.find(r => r.position >= a.position);
+      if (!reward || s.tournament.currency < reward.currency) return s;
+      return {
+        ...s,
+        tournament: { ...s.tournament, currency: s.tournament.currency - reward.currency },
+        hero: { ...s.hero, gold: s.hero.gold + reward.currency * 100 },
+      };
+    }
+    
+    case "RUNE_INSERT": {
+      const rune = RUNES.find(r => r.id === a.runeId);
+      if (!rune) return s;
+      const gearRuneData = s.runes.gear[a.gearUid] || { uid: a.gearUid, runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }] };
+      if (a.slotIndex < 0 || a.slotIndex >= 3) return s;
+      const invRune = s.runes.inventory.find(i => i.runeId === a.runeId);
+      if (!invRune || invRune.count <= 0) return s;
+      const newRunes = [...gearRuneData.runes];
+      newRunes[a.slotIndex] = { runeId: a.runeId, rank: 1 };
+      return {
+        ...s,
+        runes: {
+          gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
+          inventory: s.runes.inventory.map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i),
+        },
+      };
+    }
+    
+    case "RUNE_REMOVE": {
+      const gearRuneData = s.runes.gear[a.gearUid];
+      if (!gearRuneData || a.slotIndex < 0 || a.slotIndex >= 3) return s;
+      const slot = gearRuneData.runes[a.slotIndex];
+      if (!slot.runeId) return s;
+      const newRunes = [...gearRuneData.runes];
+      newRunes[a.slotIndex] = { runeId: null, rank: 0 };
+      const existingInv = s.runes.inventory.find(i => i.runeId === slot.runeId);
+      return {
+        ...s,
+        runes: {
+          gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
+          inventory: existingInv 
+            ? s.runes.inventory.map(i => i.runeId === slot.runeId ? { ...i, count: i.count + 1 } : i)
+            : [...s.runes.inventory, { runeId: slot.runeId, count: 1 }],
+        },
+      };
+    }
+    
+    case "BASE_COLLECT": {
+      if (!s.base.unlocked) return s;
+      const now = Date.now();
+      const hoursSinceCollect = (now - s.base.lastCollectTime) / (1000 * 60 * 60);
+      const newResources = { ...s.base.resources };
+      for (const buildingId of Object.keys(s.base.buildings)) {
+        const building = BASE_BUILDINGS.find(b => b.id === buildingId);
+        if (!building) continue;
+        const bData = s.base.buildings[buildingId];
+        for (const [res, amount] of Object.entries(building.production)) {
+          newResources[res] = (newResources[res] || 0) + Math.floor(amount * bData.level * hoursSinceCollect);
+        }
+      }
+      return {
+        ...s,
+        base: { ...s.base, resources: newResources, lastCollectTime: now },
+      };
+    }
+    
+    case "BASE_UPGRADE_BUILDING": {
+      const buildingDef = BASE_BUILDINGS.find(b => b.id === a.buildingId);
+      if (!buildingDef || !s.base.unlocked) return s;
+      const bData = s.base.buildings[a.buildingId] || { id: a.buildingId, level: 0, productionRate: 0, assignedHero: null };
+      const cost = Math.floor(buildingDef.baseCost * Math.pow(buildingDef.upgradeMult, bData.level));
+      if (s.hero.gold < cost) return s;
+      return {
+        ...s,
+        hero: { ...s.hero, gold: s.hero.gold - cost },
+        base: {
+          ...s.base,
+          buildings: { ...s.base.buildings, [a.buildingId]: { ...bData, level: bData.level + 1 } },
+        },
+      };
+    }
+    
+    case "BASE_ASSIGN_HERO": {
+      if (!s.base.unlocked || !s.base.buildings[a.buildingId]) return s;
+      return {
+        ...s,
+        base: {
+          ...s.base,
+          buildings: { ...s.base.buildings, [a.buildingId]: { ...s.base.buildings[a.buildingId], assignedHero: a.classId } },
+        },
+      };
+    }
+    
+    case "SOCIAL_SEND_GIFT": {
+      const today = new Date().toDateString();
+      if (s.social.giftsSent.includes(today + ":" + a.friendId)) return s;
+      return {
+        ...s,
+        social: { ...s.social, giftsSent: [...s.social.giftsSent, today + ":" + a.friendId] },
+      };
+    }
+    
+    case "SOCIAL_CLAIM_GIFT": {
+      const gift = s.social.giftsReceived[a.giftIndex];
+      if (!gift || gift.claimed) return s;
+      return {
+        ...s,
+        social: {
+          ...s.social,
+          giftsReceived: s.social.giftsReceived.map((g, i) => i === a.giftIndex ? { ...g, claimed: true } : g),
+        },
+        hero: { ...s.hero, gold: s.hero.gold + (gift.reward.gold || 0), gems: s.hero.gems + (gift.reward.gems || 0) },
+      };
+    }
+    
+    case "SOCIAL_INVITE_FRIEND": {
+      if (s.social.referred.includes(a.friendId)) return s;
+      return {
+        ...s,
+        social: { ...s.social, referred: [...s.social.referred, a.friendId] },
+        hero: { ...s.hero, gems: s.hero.gems + 50 },
+      };
+    }
+    
+    case "AFK_REWARDS_CLAIM": {
+      if (!s.afkRewards.available || s.afkRewards.claimed) return s;
+      const option = s.afkRewards.options[a.optionIndex];
+      if (!option) return s;
+      let multiplier = 1;
+      if (a.multiply && option.multiplyAvailable) {
+        multiplier = 2;
+      }
+      let newState = { ...s, afkRewards: { ...s.afkRewards, claimed: true, multiplied: a.multiply } };
+      if (option.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + option.amount * multiplier };
+      if (option.type === "xp") {
+        const xpGain = option.amount * multiplier;
+        gainXp(newState, xpGain, false);
+      }
+      if (option.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + option.amount * multiplier };
+      return newState;
+    }
+    
     default: return s;
   }
 }
@@ -2004,6 +2334,14 @@ function farmTick(s: GameState, dt: number): GameState {
   const B = st.battle;
 
   B.fx = B.fx.map(f => ({ ...f, life: f.life - dt })).filter(f => f.life > 0).slice(0, 16);
+  
+  // Обновление статусов (баффы/дебаффы)
+  if (B.statuses.length) {
+    B.statuses = B.statuses.map(s => ({ ...s, t: s.t - dt })).filter(s => {
+      if (s.t <= 0 && s.side === "enemy") pushLog(st, `Эффект «${s.label}» на враге рассеялся`);
+      return s.t > 0;
+    });
+  }
 
   if (st.buffs.length) {
     st.buffs = st.buffs.map(b => ({ ...b, t: b.t - dt })).filter(b => {

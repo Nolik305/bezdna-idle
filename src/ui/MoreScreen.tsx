@@ -9,8 +9,18 @@ import { AdminPanel } from "./AdminPanel";
 import { CraftSeg } from "./CraftScreen";
 import { EventSeg } from "./EventScreen";
 import { GuildSeg } from "./GuildScreen";
+import { PrestigeScreen } from "./PrestigeScreen";
+import { AFKRewardsScreen } from "./AFKRewardsScreen";
+import { BestiaryScreen } from "./BestiaryScreen";
+import { GuildBossScreen } from "./GuildBossScreen";
+import { BattlePassScreen } from "./BattlePassScreen";
+import { PetScreen } from "./PetScreen";
+import { TournamentScreen } from "./TournamentScreen";
+import { RunesScreen } from "./RunesScreen";
+import { BaseScreen } from "./BaseScreen";
+import { SocialScreen } from "./SocialScreen";
 
-type Seg = "quests" | "shop" | "ach" | "craft" | "event" | "guild" | "opt" | "admin";
+type Seg = "quests" | "shop" | "ach" | "craft" | "event" | "guild" | "opt" | "admin" | "prestige" | "afk" | "bestiary" | "guildboss" | "battlepass" | "pet" | "tournament" | "runes" | "base" | "social";
 
 function QuestRow({ def, done, progress, onClaim }: { def: QuestDef; done: boolean; progress: number; onClaim: () => void }) {
   if (done) return null; // забранные — скрываем, чтобы не мешали
@@ -345,6 +355,16 @@ export function MoreScreen() {
     { id: "craft", n: "Крафт", i: "gear" },
     { id: "event", n: "Ивент", i: "flame" },
     { id: "guild", n: "Гильдия", i: "users" },
+    { id: "prestige", n: "Престиж", i: "crown" },
+    { id: "afk", n: "AFK", i: "moon" },
+    { id: "bestiary", n: "Бестиарий", i: "skull" },
+    { id: "guildboss", n: "Босс ГВ", i: "crossed" },
+    { id: "battlepass", n: "БП", i: "ticket" },
+    { id: "pet", n: "Питомец", i: "paw" },
+    { id: "tournament", n: "Турнир", i: "trophy" },
+    { id: "runes", n: "Руны", i: "spark" },
+    { id: "base", n: "База", i: "home" },
+    { id: "social", n: "Социал", i: "heart" },
     { id: "opt", n: "Опции", i: "sliders" },
   ];
   if (isAdmin) tabs.push({ id: "admin", n: "Админ", i: "gear" });
@@ -365,6 +385,16 @@ export function MoreScreen() {
       {seg === "craft" && <CraftSeg />}
       {seg === "event" && <EventSeg />}
       {seg === "guild" && <GuildSeg />}
+      {seg === "prestige" && <PrestigeScreen />}
+      {seg === "afk" && <AFKRewardsScreen />}
+      {seg === "bestiary" && <BestiaryScreen />}
+      {seg === "guildboss" && <GuildBossScreen />}
+      {seg === "battlepass" && <BattlePassScreen />}
+      {seg === "pet" && <PetScreen />}
+      {seg === "tournament" && <TournamentScreen />}
+      {seg === "runes" && <RunesScreen />}
+      {seg === "base" && <BaseScreen />}
+      {seg === "social" && <SocialScreen />}
       {seg === "opt" && <OptSeg />}
       {seg === "admin" && <AdminPanel />}
     </div>

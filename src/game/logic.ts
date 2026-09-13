@@ -2580,6 +2580,22 @@ export function migrateState(s: GameState): GameState {
   // если герой застрял мёртвым в старом сейве — сразу воскрешаем
   if (s.hero.hp <= 0) s.hero = { ...s.hero, hp: Math.round(getStats(s).maxHp * 0.6) };
   if (s.battle.paused && s.battle.respawnT <= 0 && s.battle.enemy) s.battle.paused = false;
+
+  // === МИГРАЦИЯ НОВЫХ СИСТЕМ ===
+  if (!s.prestige) s.prestige = { count: 0, essence: 0, bonuses: {}, talents: {} };
+  else { if (!s.prestige.essence) s.prestige.essence = 0; if (!s.prestige.bonuses) s.prestige.bonuses = {}; if (!s.prestige.talents) s.prestige.talents = {}; }
+  if (!s.bestiary) s.bestiary = { entries: {}, collectionBonus: {}, bonuses: [], maxKills: {}, milestones: [] };
+  else { if (!s.bestiary.bonuses) s.bestiary.bonuses = []; if (!s.bestiary.maxKills) s.bestiary.maxKills = {}; if (!s.bestiary.milestones) s.bestiary.milestones = []; }
+  if (!s.guildBoss) s.guildBoss = null;
+  if (!s.battlePass) s.battlePass = { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 };
+  else { if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = 0; if (!s.battlePass.weeklyQuests) s.battlePass.weeklyQuests = []; if (!s.battlePass.missions) s.battlePass.missions = []; }
+  if (!s.pet) s.pet = { unlocked: false, equipped: null, petId: null, owned: [], pets: {}, canLevelUp: false, level: 1, xp: 0, levelUpCost: 20 };
+  if (!s.tournament) s.tournament = { active: false, tickets: 10, wins: 0, losses: 0, fightsLeft: 5, bestWins: 0, currency: 0, endDate: 0, seasonEndsAt: 0, canClaimReward: false, lastSeasonRank: 0, leaderboard: [] };
+  if (!s.runes) s.runes = { gear: {}, inventory: [] };
+  if (!s.base) s.base = { unlocked: false, buildings: {}, resources: {}, lastCollectTime: 0 };
+  if (!s.social) s.social = { friends: [], giftsReceived: [], giftsSent: [], referred: [], friendLeaderboard: [] };
+  if (!s.afkRewards) s.afkRewards = { available: false, offlineTime: 0, options: [], claimed: false, multiplied: false };
+
   return s;
 }
 

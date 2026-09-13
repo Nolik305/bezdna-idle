@@ -94,7 +94,7 @@ export function SocialScreen() {
           <div className="space-y-2">
             {social.friends.slice(0, 5).map((friendId) => {
               const today = new Date().toDateString();
-              const sentToday = social.giftsSent.some(entry => entry === today + ":" + friendId);
+              const sentToday = Array.isArray(social.giftsSent) && social.giftsSent.some((entry: string) => entry === today + ":" + friendId);
               return (
                 <button
                   key={friendId}

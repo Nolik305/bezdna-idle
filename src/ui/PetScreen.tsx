@@ -6,6 +6,21 @@ import { PETS, RUNES, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM } fr
 export function PetScreen() {
   const { s, d } = useGame();
   const { pet } = s;
+  
+  // Защита от неинициализированных данных
+  if (!pet || !Array.isArray(pet.owned)) {
+    return (
+      <div className="space-y-4">
+        <div className="panel p-4 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-green-500/10 to-transparent" />
+          <div className="relative">
+            <h2 className="text-xl font-display text-green-400 tracking-widest">ПИТОМЦЫ</h2>
+            <p className="text-[10px] text-dim mt-1">Загрузка...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

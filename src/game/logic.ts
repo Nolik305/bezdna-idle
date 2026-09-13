@@ -2589,11 +2589,11 @@ export function migrateState(s: GameState): GameState {
   if (!s.guildBoss) s.guildBoss = null;
   if (!s.battlePass) s.battlePass = { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 };
   else { if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = 0; if (!s.battlePass.weeklyQuests) s.battlePass.weeklyQuests = []; if (!s.battlePass.missions) s.battlePass.missions = []; }
-  if (!s.pet) s.pet = { unlocked: false, equipped: null, petId: null, owned: [], pets: {}, canLevelUp: false, level: 1, xp: 0, levelUpCost: 20 };
+  if (!s.pet || !s.pet.unlocked) s.pet = { unlocked: false, equipped: null, petId: null, owned: [], pets: {}, canLevelUp: false, level: 1, xp: 0, levelUpCost: 20 };
   if (!s.tournament) s.tournament = { active: false, tickets: 10, wins: 0, losses: 0, fightsLeft: 5, bestWins: 0, currency: 0, endDate: 0, seasonEndsAt: 0, canClaimReward: false, lastSeasonRank: 0, leaderboard: [] };
   if (!s.runes) s.runes = { gear: {}, inventory: [] };
   if (!s.base) s.base = { unlocked: false, buildings: {}, resources: {}, lastCollectTime: 0 };
-  if (!s.social) s.social = { friends: [], giftsReceived: [], giftsSent: [], referred: [], friendLeaderboard: [] };
+  if (!s.social || !Array.isArray(s.social.friends)) s.social = { friends: [], giftsReceived: [], giftsSent: [], referred: [], friendLeaderboard: [] };
   if (!s.afkRewards) s.afkRewards = { available: false, offlineTime: 0, options: [], claimed: false, multiplied: false };
 
   return s;

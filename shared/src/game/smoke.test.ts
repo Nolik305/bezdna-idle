@@ -1,0 +1,1 @@
+../../../src/game/smoke.test.ts

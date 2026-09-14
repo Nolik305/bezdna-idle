@@ -1,0 +1,9 @@
+# /etc/cron.d/abyss-backup
+# Ежедневный бэкап БД abyss_idle в 03:00
+0 3 * * * root /var/www/game-project/server/backup.sh >> /var/log/abyss-backup.log 2>&1
+
+# Еженедельная ротация PM2 логов (воскресенье в 04:00)
+0 4 * * 0 root pm2 rotate >> /var/log/pm2-rotate.log 2>&1
+
+# Ежедневная проверка здоровья (каждые 5 минут)
+*/5 * * * * root curl -sf http://127.0.0.1:3001/health > /dev/null || (pm2 restart game-api && echo "$(date): Restarted game-api" >> /var/log/pm2-health.log)

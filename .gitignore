@@ -1,0 +1,12 @@
+```
+# Build artifacts
+dist/
+build/
+
+# Keep the production entrypoint and Vite bundles available to the static host.
+!dist/
+!dist/index.html
+!dist/assets/
+!dist/assets/*
+```
+node_modules

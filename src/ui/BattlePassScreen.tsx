@@ -87,13 +87,13 @@ export function BattlePassScreen() {
           <h4 className="text-[10px] text-dim uppercase mb-2">Бесплатный трек</h4>
           <div className="grid grid-cols-5 gap-1">
             {BATTLE_PASS_REWARDS_FREE.map((reward, idx) => {
-              const claimed = battlePass.claimedFree.includes(idx + 1);
-              const reachable = battlePass.level >= idx + 1;
+              const claimed = battlePass.claimedFree.includes(reward.tier);
+              const reachable = battlePass.level >= reward.tier;
               return (
                 <button
-                  key={idx}
+                  key={reward.tier}
                   disabled={!reachable || claimed}
-                  onClick={() => d({ type: "BATTLE_PASS_CLAIM_FREE", tier: idx + 1 })}
+                  onClick={() => d({ type: "BATTLE_PASS_CLAIM_FREE", tier: reward.tier })}
                   className={`aspect-square rounded-lg border flex flex-col items-center justify-center gap-0.5 ${
                     claimed ? "border-gold/30 bg-gold/5 opacity-50" :
                     reachable ? "border-purple-400/50 bg-purple-400/10 hover:bg-purple-400/20" :
@@ -101,7 +101,7 @@ export function BattlePassScreen() {
                   }`}
                 >
                   <Icon n={reward.icon as any} className="w-4 h-4 text-purple-300" />
-                  <span className="text-[7px] text-dim">{idx + 1}</span>
+                  <span className="text-[7px] text-dim">{reward.tier}</span>
                   {claimed && <Icon n="check" className="w-3 h-3 text-gold absolute top-0 right-0" />}
                 </button>
               );
@@ -118,13 +118,13 @@ export function BattlePassScreen() {
             </h4>
             <div className="grid grid-cols-5 gap-1">
               {BATTLE_PASS_REWARDS_PREMIUM.map((reward, idx) => {
-                const claimed = battlePass.claimedPremium.includes(idx + 1);
-                const reachable = battlePass.level >= idx + 1;
+                const claimed = battlePass.claimedPremium.includes(reward.tier);
+                const reachable = battlePass.level >= reward.tier;
                 return (
                   <button
-                    key={idx}
+                    key={reward.tier}
                     disabled={!reachable || claimed}
-                    onClick={() => d({ type: "BATTLE_PASS_CLAIM_PREMIUM", tier: idx + 1 })}
+                    onClick={() => d({ type: "BATTLE_PASS_CLAIM_PREMIUM", tier: reward.tier })}
                     className={`aspect-square rounded-lg border flex flex-col items-center justify-center gap-0.5 ${
                       claimed ? "border-gold/30 bg-gold/5 opacity-50" :
                       reachable ? "border-gold/50 bg-gold/10 hover:bg-gold/20" :
@@ -132,7 +132,7 @@ export function BattlePassScreen() {
                     }`}
                   >
                     <Icon n={reward.icon as any} className="w-4 h-4 text-gold" />
-                    <span className="text-[7px] text-dim">{idx + 1}</span>
+                    <span className="text-[7px] text-dim">{reward.tier}</span>
                     {claimed && <Icon n="check" className="w-3 h-3 text-gold absolute top-0 right-0" />}
                   </button>
                 );

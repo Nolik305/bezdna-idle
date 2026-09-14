@@ -2604,7 +2604,13 @@ export function migrateState(s: GameState): GameState {
   };
   if (!s.guildBoss) s.guildBoss = null;
   if (!s.battlePass) s.battlePass = { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 };
-  else { if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = 0; if (!s.battlePass.weeklyQuests) s.battlePass.weeklyQuests = []; if (!s.battlePass.missions) s.battlePass.missions = []; }
+  else {
+    if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = 0;
+    if (!Array.isArray(s.battlePass.weeklyQuests)) s.battlePass.weeklyQuests = [];
+    if (!Array.isArray(s.battlePass.claimedFree)) s.battlePass.claimedFree = [];
+    if (!Array.isArray(s.battlePass.claimedPremium)) s.battlePass.claimedPremium = [];
+    if (!Array.isArray(s.battlePass.missions)) s.battlePass.missions = [];
+  }
   s.pet = {
     ...ref.pet,
     ...(s.pet || {}),

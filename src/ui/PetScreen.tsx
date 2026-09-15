@@ -1,5 +1,6 @@
 import { useGame } from "../game/useGame";
 import { PETS, RARITY } from "../game/data";
+import { Icon } from "./bits";
 
 export function PetScreen() {
   const { s, d } = useGame();

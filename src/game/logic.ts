@@ -20,7 +20,7 @@ import {
   BASE_BUILDINGS,
   TOURNAMENT_CONFIG, TOURNAMENT_REWARDS,
 } from "./data";
-import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
+import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, GuildBossS, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
 import { getCustomSets, getCustomItems, rollCustomItem, getCustomItemById, getCustomSetById } from "./customContent";
 import { autoIlvl, getBalance, getDropPools, statValue, statRoll } from "./balanceConfig";
 
@@ -2239,6 +2239,8 @@ export function reducer(s: GameState, a: Action): GameState {
       const petDef = PETS.find(p => p.id === a.petId);
       const petData = s.pet.pets[a.petId];
       if (!petDef || !petData) return s;
+      // Проверяем уровень героя (питомца нельзя улучшать ниже его уровня разблокировки)
+      if (s.hero.level < petDef.unlockLevel) return s;
       const cost = petDef.levelUpCost * petData.level;
       if (s.hero.gems < cost) return s;
       const xpNeeded = petData.level * 500;

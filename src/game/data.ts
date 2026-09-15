@@ -664,18 +664,18 @@ export interface RelicDef {
   skillLvl?: number; bossGold?: number;
 }
 export const RELICS: RelicDef[] = [
-  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 25 },
-  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 18 },
-  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 12 },
-  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 30 },
-  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 25 },
-  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 35 },
-  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 30 },
-  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 8 },
-  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 60 },
-  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 40 },
-  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1 },
-  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1 },
+  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 25, desc: (r) => `+${r * 25}% к урону` },
+  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 18, desc: (r) => `+${r * 18}% к скорости атаки` },
+  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 12, desc: (r) => `+${r * 12}% к критическому удару` },
+  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 30, desc: (r) => `+${r * 30}% к HP` },
+  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 25, desc: (r) => `+${r * 25}% к удаче` },
+  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 35, desc: (r) => `+${r * 35}% к золоту` },
+  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 30, desc: (r) => `+${r * 30}% к опыту` },
+  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 8, desc: (r) => `+${r * 8}% вампиризма` },
+  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 60, desc: (r) => `+${r * 60} отражённого урона` },
+  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 40, desc: (r) => `+${r * 40}% к критическому урону` },
+  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1, desc: (r) => `+${r} уровень всем навыкам` },
+  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1, desc: (r) => `+${r} ударов по боссу для золота` },
   { id: "cursed", name: "Проклятая сила", icon: "skull", max: 1, cursed: true, dmgPct: 60, hpPct: -25, desc: () => `+60% урона, но −25% макс. HP. Оно того стоит?` },
 ];
 

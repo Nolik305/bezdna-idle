@@ -272,7 +272,25 @@ export function genItem(ilvl: number, minRarity: number, classId: ClassId, luck:
     if (classId === "archer") name = name.replace(/^(\w+)\s(посох|жезл|молот)/i, "$1 лук");
   }
   const sell = Math.round(Math.pow(rarity + 1, 2.1) * 9 + ilvl * 1.4);
-  return { uid, base, name, rarity, ilvl, stats, sell };
+  
+  // Генерация гнёзд для рун: шанс зависит от редкости
+  // 0 (common): 0 гнёзд, 1 (magic): 1 гнездо (30%), 2 (rare): 1-2 (50%/50%), 3 (epic): 2-3 (60%/40%), 4 (legend): 3 (80%), 5 (abyss): 3 (100%)
+  let sockets = 0;
+  if (rarity === 0) {
+    sockets = 0;
+  } else if (rarity === 1) {
+    sockets = Math.random() < 0.3 ? 1 : 0;
+  } else if (rarity === 2) {
+    sockets = Math.random() < 0.5 ? 2 : 1;
+  } else if (rarity === 3) {
+    sockets = Math.random() < 0.6 ? 2 : 3;
+  } else if (rarity === 4) {
+    sockets = Math.random() < 0.2 ? 2 : 3;
+  } else if (rarity === 5) {
+    sockets = 3;
+  }
+  
+  return { uid, base, name, rarity, ilvl, stats, sell, sockets };
 }
 
 export const INV_CAP = 40;
@@ -920,13 +938,21 @@ export const BATTLE_PASS_REWARDS_FREE = [
   { tier: 8, type: "shards", amount: 5, icon: "crystal" },
   { tier: 9, type: "gold", amount: 15000 },
   { tier: 10, type: "gems", amount: 20 },
+  { tier: 12, type: "rune", runeId: "rune_fire", icon: "flame" },
   { tier: 15, type: "gold", amount: 20000 },
+  { tier: 18, type: "rune", runeId: "rune_ice", icon: "snow" },
   { tier: 20, type: "shards", amount: 10 },
+  { tier: 22, type: "rune", runeId: "rune_shadow", icon: "skull" },
   { tier: 25, type: "gold", amount: 25000 },
+  { tier: 28, type: "rune", runeId: "rune_life", icon: "heart" },
   { tier: 30, type: "gems", amount: 30 },
+  { tier: 32, type: "rune", runeId: "rune_gold", icon: "coin" },
   { tier: 35, type: "gold", amount: 30000 },
+  { tier: 38, type: "rune", runeId: "rune_xp", icon: "book" },
   { tier: 40, type: "shards", amount: 15 },
+  { tier: 42, type: "rune", runeId: "rune_luck", icon: "clover" },
   { tier: 45, type: "gold", amount: 40000 },
+  { tier: 48, type: "rune", runeId: "rune_as", icon: "bolt" },
   { tier: 50, type: "gems", amount: 50 },
 ];
 

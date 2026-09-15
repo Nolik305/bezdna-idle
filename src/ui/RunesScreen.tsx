@@ -76,8 +76,9 @@ export function RunesScreen() {
                   <span className="text-[9px] text-dim">{item.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {Array.from({ length: sockets }).map((_, idx) => {
-                    const runeId = gearRunes[idx];
+                  {Array.from({ length: Math.max(sockets, gearRunes.length) }).map((_, idx) => {
+                    const runeSlot = gearRunes[idx];
+                    const runeId = runeSlot?.runeId;
                     return (
                       <button
                         key={idx}
@@ -99,7 +100,7 @@ export function RunesScreen() {
                       </button>
                     );
                   })}
-                  {sockets === 0 && (
+                  {sockets === 0 && gearRunes.length === 0 && (
                     <span className="text-[8px] text-dim">Нет гнёзд</span>
                   )}
                 </div>

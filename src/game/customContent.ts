@@ -51,6 +51,24 @@ export function registerCustomContent(contents: AdminContent[]): void {
         ? (d.base as BaseSlot) : "weapon";
       const rarity = Math.max(0, Math.min(5, Number(d.rarity) || 1)) as Rarity;
       const ilvl = Math.max(1, Math.min(9999, Number(d.ilvl) || 1));
+      // Генерация гнёзд для рун: шанс зависит от редкости (как в genItem)
+      let sockets = 0;
+      if (rarity === 0) {
+        sockets = 0;
+      } else if (rarity === 1) {
+        sockets = Math.random() < 0.3 ? 1 : 0;
+      } else if (rarity === 2) {
+        sockets = Math.random() < 0.5 ? 2 : 1;
+      } else if (rarity === 3) {
+        sockets = Math.random() < 0.6 ? 2 : 3;
+      } else if (rarity === 4) {
+        sockets = Math.random() < 0.2 ? 2 : 3;
+      } else if (rarity === 5) {
+        sockets = 3;
+      }
+      // Цена продажи: если не задана, считаем по формуле как в genItem
+      const sellBase = Number(d.sell);
+      const sell = sellBase > 0 ? sellBase : Math.round(Math.pow(rarity + 1, 2.1) * 9 + ilvl * 1.4);
       const item: Item = {
         uid: Date.now() + items.length,
         base,
@@ -58,7 +76,8 @@ export function registerCustomContent(contents: AdminContent[]): void {
         rarity,
         ilvl,
         stats,
-        sell: Math.max(1, Number(d.sell) || Math.round(60 + ilvl * 3)),
+        sell,
+        sockets,
       };
       items.push(item);
       itemsById[c.id] = item;

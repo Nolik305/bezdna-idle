@@ -961,14 +961,15 @@ function runKill(st: GameState) {
   const giveItem = (it: Item) => {
     st.totals.items += 1;
     if (it.rarity === 4) st.totals.legendaries += 1;
+    const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
     if (autoSellItem(st, it)) {
-      st.run.goldEarned += Math.max(1, Math.round(it.sell * AUTO_SELL_RATE));
+      st.run.goldEarned += Math.max(1, Math.round(sellValue * AUTO_SELL_RATE));
       return;
     }
     if (st.inv.length >= INV_CAP) {
-      st.hero.gold += it.sell; st.totals.goldEarned += it.sell;
-      st.run.goldEarned += it.sell;
-      st.battle.log = [`Рюкзак полон: «${it.name}» продан за ${it.sell} зол.`, ...st.battle.log].slice(0, 6);
+      st.hero.gold += sellValue; st.totals.goldEarned += sellValue;
+      st.run.goldEarned += sellValue;
+      st.battle.log = [`Рюкзак полон: «${it.name}» продан за ${sellValue} зол.`, ...st.battle.log].slice(0, 6);
     } else {
       st.inv = [...st.inv, it];
       toast(st, `Добыча: ${it.name}`, "loot");
@@ -1039,9 +1040,10 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
     st.uidSeq += 1;
     const it = genAbyssItem(st.hero.level * 4 + reached * 2 + 8 + depth * 6, st.uidSeq, st.hero.classId, reached);
     st.totals.items += 1;
+    const sellValueIt = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
     if (autoSellItem(st, it)) { /* автопродажа уже выдала золото */ }
     else if (st.inv.length < INV_CAP) { st.inv = [...st.inv, it]; toast(st, `Награда Портала: ${it.name}`, "loot"); }
-    else { st.hero.gold += it.sell; st.totals.goldEarned += it.sell; }
+    else { st.hero.gold += sellValueIt; st.totals.goldEarned += sellValueIt; }
     // сет Атласа (шанс)
     if (Math.random() < 0.5) {
       const pool = allSetPool(depth);
@@ -1050,14 +1052,15 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
         st.uidSeq += 1;
         const sit = genSetItem(sdef.id, st.hero.level * 3 + depth * 10, st.hero.classId, st.uidSeq);
         st.totals.items += 1; st.totals.setPieces += 1;
+        const sellValueSit = typeof sit.sell === "number" && sit.sell > 0 ? sit.sell : 1;
         if (autoSellItem(st, sit)) { /* автопродажа уже выдала золото */ }
         else if (st.inv.length < INV_CAP) {
           st.inv = [...st.inv, sit];
           toast(st, `Сет «${sdef.name}»: ${sit.name}`, "loot");
         } else {
-          st.hero.gold += sit.sell;
-          st.totals.goldEarned += sit.sell;
-          toast(st, `Рюкзак полон: сет продан за ${sit.sell} зол.`, "gold");
+          st.hero.gold += sellValueSit;
+          st.totals.goldEarned += sellValueSit;
+          toast(st, `Рюкзак полон: сет продан за ${sellValueSit} зол.`, "gold");
         }
       }
     }
@@ -1141,13 +1144,14 @@ function heroHit(st: GameState, stats: Stats, mult: number) {
 function giveItemDrop(st: GameState, it: Item) {
   st.totals.items += 1;
   if (it.rarity === 4) st.totals.legendaries += 1;
+  const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
   if (autoSellItem(st, it)) {
     return;
   }
   if (st.inv.length >= INV_CAP) {
-    st.hero.gold += it.sell;
-    st.totals.goldEarned += it.sell;
-    pushLog(st, `Рюкзак полон: «${it.name}» продан за ${it.sell} зол.`);
+    st.hero.gold += sellValue;
+    st.totals.goldEarned += sellValue;
+    pushLog(st, `Рюкзак полон: «${it.name}» продан за ${sellValue} зол.`);
   } else {
     st.inv = [...st.inv, it];
     toast(st, `Добыча: ${it.name}`, "loot");
@@ -1295,6 +1299,36 @@ function killEnemy(st: GameState, stats: Stats) {
   const dropChance = (e.boss ? b.bossDropChance : b.dropBaseChance) + stats.luck / 100;
   if (Math.random() < dropChance) dropItem(st, stats, e.boss);
   if (e.boss && Math.random() < b.bossExtraChance) dropItem(st, stats, true);
+  
+  // Дроп рун: с боссов и элиток (волны 5, 10 в зоне)
+  // Босс: 30% шанс руны, элитка (волна 5, 10): 15% шанс
+  const isEliteWave = st.battle.wave === 5 || st.battle.wave === 10;
+  let runeDropChance = 0;
+  if (e.boss) {
+    runeDropChance = 0.30; // 30% с босса
+  } else if (isEliteWave) {
+    runeDropChance = 0.15; // 15% с элитки
+  }
+  if (runeDropChance > 0 && Math.random() < runeDropChance) {
+    // Выбираем случайную руну
+    const randomRune = RUNES[Math.floor(Math.random() * RUNES.length)];
+    if (randomRune) {
+      const existingRune = st.runes.inventory.find(i => i.runeId === randomRune.id);
+      if (existingRune) {
+        st.runes = {
+          ...st.runes,
+          inventory: st.runes.inventory.map(i => i.runeId === randomRune.id ? { ...i, count: i.count + 1 } : i),
+        };
+      } else {
+        st.runes = {
+          ...st.runes,
+          inventory: [...st.runes.inventory, { runeId: randomRune.id, count: 1 }],
+        };
+      }
+      pushLog(st, `С ${e.boss ? 'босса' : 'элитного врага'} выпала руна: ${randomRune.name}!`);
+      toast(st, `Получена руна: ${randomRune.name}`, "loot");
+    }
+  }
 
   pushLog(st, KILL_PHRASES[Math.floor(Math.random() * KILL_PHRASES.length)].replace("{e}", e.name));
 
@@ -1440,7 +1474,8 @@ export function reducer(s: GameState, a: Action): GameState {
       const st = { ...s, inv: [...s.inv], hero: { ...s.hero } };
       let gold = 0;
       for (const it of a.items) {
-        if (st.inv.length >= INV_CAP) { gold += it.sell; continue; }
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
+        if (st.inv.length >= INV_CAP) { gold += sellValue; continue; }
         st.inv = [...st.inv, it];
       }
       if (gold > 0) { st.hero.gold += gold; st.totals.goldEarned += gold; toast(st, `Рюкзак полон: часть наград продана за ${gold} зол.`, "gold"); }
@@ -1513,6 +1548,24 @@ export function reducer(s: GameState, a: Action): GameState {
       let slot: Slot = it.base as Slot;
       if (it.base === "ring") slot = !s.equip.ring1 ? "ring1" : !s.equip.ring2 ? "ring2" : "ring1";
       const old = st.equip[slot];
+      // Сохраняем руны со старого предмета в инвентарь при экипировке нового
+      if (old && s.runes.gear[old.uid]) {
+        const oldRunes = s.runes.gear[old.uid];
+        let newInv = [...st.inv];
+        for (const runeSlot of oldRunes.runes) {
+          if (runeSlot.runeId) {
+            const existingRune = newInv.find(i => i.runeId === runeSlot.runeId);
+            if (existingRune) {
+              newInv = newInv.map(i => i.runeId === runeSlot.runeId ? { ...i, count: i.count + 1, rank: Math.max(i.rank || 0, runeSlot.rank) } : i);
+            } else {
+              newInv = [...newInv, { runeId: runeSlot.runeId, count: 1, rank: runeSlot.rank }];
+            }
+          }
+        }
+        st.inv = newInv;
+        st.runes = { ...s.runes, gear: { ...s.runes.gear } };
+        delete st.runes.gear[old.uid];
+      }
       st.equip[slot] = it;
       if (old) st.inv = [...st.inv, old];
       st.hero.hp = Math.min(st.hero.hp, getStats(st).maxHp);
@@ -1524,6 +1577,24 @@ export function reducer(s: GameState, a: Action): GameState {
       if (!it) return s;
       if (s.inv.length >= INV_CAP) { const st = { ...s }; toast(st, "Рюкзак полон!", "warn"); return st; }
       const st = { ...s, equip: { ...s.equip, [a.slot]: null }, inv: [...s.inv, it], hero: { ...s.hero } };
+      // Сохраняем руны с предмета в инвентарь при снятии
+      if (s.runes.gear[it.uid]) {
+        const gearRunes = s.runes.gear[it.uid];
+        let newInv = [...st.inv];
+        for (const runeSlot of gearRunes.runes) {
+          if (runeSlot.runeId) {
+            const existingRune = newInv.find(i => i.runeId === runeSlot.runeId);
+            if (existingRune) {
+              newInv = newInv.map(i => i.runeId === runeSlot.runeId ? { ...i, count: i.count + 1, rank: Math.max(i.rank || 0, runeSlot.rank) } : i);
+            } else {
+              newInv = [...newInv, { runeId: runeSlot.runeId, count: 1, rank: runeSlot.rank }];
+            }
+          }
+        }
+        st.inv = newInv;
+        st.runes = { ...s.runes, gear: { ...s.runes.gear } };
+        delete st.runes.gear[it.uid];
+      }
       st.hero.hp = Math.min(st.hero.hp, getStats(st).maxHp);
       return st;
     }
@@ -1531,16 +1602,64 @@ export function reducer(s: GameState, a: Action): GameState {
     case "SELL": {
       const it = s.inv.find(i => i.uid === a.uid);
       if (!it) return s;
-      const st = { ...s, inv: s.inv.filter(i => i.uid !== a.uid), hero: { ...s.hero, gold: s.hero.gold + it.sell }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + it.sell } };
-      toast(st, `Продано за ${it.sell} зол.`, "gold");
+      // Защита от предметов без цены (кастомные предметы без sell)
+      const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
+      // Если на предмете есть руны, возвращаем их в инвентарь
+      let newRunesInventory = s.runes.inventory;
+      if (s.runes.gear[it.uid]) {
+        const gearRunes = s.runes.gear[it.uid];
+        for (const runeSlot of gearRunes.runes) {
+          if (runeSlot.runeId) {
+            const existingRune = newRunesInventory.find(i => i.runeId === runeSlot.runeId);
+            if (existingRune) {
+              newRunesInventory = newRunesInventory.map(i => i.runeId === runeSlot.runeId ? { ...i, count: i.count + 1, rank: Math.max(i.rank || 0, runeSlot.rank) } : i);
+            } else {
+              newRunesInventory = [...newRunesInventory, { runeId: runeSlot.runeId, count: 1, rank: runeSlot.rank }];
+            }
+          }
+        }
+      }
+      const st = { 
+        ...s, 
+        inv: s.inv.filter(i => i.uid !== a.uid), 
+        runes: { ...s.runes, inventory: newRunesInventory, gear: { ...s.runes.gear } },
+        hero: { ...s.hero, gold: s.hero.gold + sellValue }, 
+        totals: { ...s.totals, goldEarned: s.totals.goldEarned + sellValue } 
+      };
+      delete st.runes.gear[it.uid];
+      toast(st, `Продано за ${sellValue} зол.`, "gold");
       return st;
     }
 
     case "SELL_JUNK": {
       const junk = s.inv.filter(i => i.rarity === 0);
       if (!junk.length) { const st = { ...s }; toast(st, "Серого хлама нет", "info"); return st; }
-      const sum = junk.reduce((acc, i) => acc + i.sell, 0);
-      const st = { ...s, inv: s.inv.filter(i => i.rarity !== 0), hero: { ...s.hero, gold: s.hero.gold + sum }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + sum } };
+      let newRunesInventory = s.runes.inventory;
+      let newGear = { ...s.runes.gear };
+      for (const item of junk) {
+        if (s.runes.gear[item.uid]) {
+          const gearRunes = s.runes.gear[item.uid];
+          for (const runeSlot of gearRunes.runes) {
+            if (runeSlot.runeId) {
+              const existingRune = newRunesInventory.find(i => i.runeId === runeSlot.runeId);
+              if (existingRune) {
+                newRunesInventory = newRunesInventory.map(i => i.runeId === runeSlot.runeId ? { ...i, count: i.count + 1, rank: Math.max(i.rank || 0, runeSlot.rank) } : i);
+              } else {
+                newRunesInventory = [...newRunesInventory, { runeId: runeSlot.runeId, count: 1, rank: runeSlot.rank }];
+              }
+            }
+          }
+          delete newGear[item.uid];
+        }
+      }
+      const sum = junk.reduce((acc, i) => acc + (typeof i.sell === "number" && i.sell > 0 ? i.sell : 1), 0);
+      const st = { 
+        ...s, 
+        inv: s.inv.filter(i => i.rarity !== 0), 
+        runes: { ...s.runes, inventory: newRunesInventory, gear: newGear },
+        hero: { ...s.hero, gold: s.hero.gold + sum }, 
+        totals: { ...s.totals, goldEarned: s.totals.goldEarned + sum } 
+      };
       toast(st, `Продано ${junk.length} шт. хлама за ${sum} зол.`, "gold");
       return st;
     }
@@ -1583,11 +1702,12 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, def.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (autoSellItem(st, it)) {
           // автопродажа уже выдала золото
         } else if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -1653,9 +1773,10 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, r.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -1682,9 +1803,10 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, r.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq, base);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -2199,6 +2321,23 @@ export function reducer(s: GameState, a: Action): GameState {
       let newState = { ...s, battlePass: { ...s.battlePass, claimedFree: [...s.battlePass.claimedFree, a.tier] } };
       if (reward.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + (reward.amount || 0) };
       if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + (reward.amount || 0) };
+      if (reward.type === "rune" && reward.runeId) {
+        const runeDef = RUNES.find(r => r.id === reward.runeId);
+        if (runeDef) {
+          const existingRune = newState.runes.inventory.find(i => i.runeId === reward.runeId);
+          if (existingRune) {
+            newState.runes = {
+              ...newState.runes,
+              inventory: newState.runes.inventory.map(i => i.runeId === reward.runeId ? { ...i, count: i.count + 1 } : i),
+            };
+          } else {
+            newState.runes = {
+              ...newState.runes,
+              inventory: [...newState.runes.inventory, { runeId: reward.runeId, count: 1, rank: 1 }],
+            };
+          }
+        }
+      }
       return newState;
     }
     
@@ -2276,28 +2415,43 @@ export function reducer(s: GameState, a: Action): GameState {
     case "RUNE_INSERT": {
       const rune = RUNES.find(r => r.id === a.runeId);
       if (!rune) return s;
+      const item = Object.values(s.equip).find((it: any) => it && it.uid === a.gearUid);
+      if (!item) return s;
+      const maxSockets = item.sockets || 0;
+      if (maxSockets <= 0) return s;
       const existingGearData = s.runes.gear[a.gearUid];
-      const gearRuneData = existingGearData || { uid: a.gearUid, runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }], sockets: 3 };
-      if (a.slotIndex < 0 || a.slotIndex >= 3) return s;
+      const gearRuneData = existingGearData || { 
+        uid: a.gearUid, 
+        runes: Array.from({ length: maxSockets }, () => ({ runeId: null, rank: 0 })), 
+        sockets: maxSockets 
+      };
+      if (a.slotIndex < 0 || a.slotIndex >= maxSockets) return s;
       const invRune = s.runes.inventory.find(i => i.runeId === a.runeId);
       if (!invRune || invRune.count <= 0) return s;
       // Проверяем, есть ли уже руна в этом слоте
       if (gearRuneData.runes[a.slotIndex].runeId) return s;
       const newRunes = [...gearRuneData.runes];
-      newRunes[a.slotIndex] = { runeId: a.runeId, rank: 1 };
+      newRunes[a.slotIndex] = { runeId: a.runeId, rank: invRune.rank || 1 };
       const activeSockets = newRunes.filter(r => r.runeId !== null).length;
+      const newInv = s.runes.inventory.filter(i => {
+        if (i.runeId !== a.runeId) return true;
+        return i.count > 1;
+      }).map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i);
       return {
         ...s,
         runes: {
           gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes, sockets: activeSockets } },
-          inventory: s.runes.inventory.filter(i => i.runeId !== a.runeId || i.count > 1).map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i),
+          inventory: newInv,
         },
       };
     }
     
     case "RUNE_REMOVE": {
       const gearRuneData = s.runes.gear[a.gearUid];
-      if (!gearRuneData || a.slotIndex < 0 || a.slotIndex >= 3) return s;
+      if (!gearRuneData) return s;
+      const item = Object.values(s.equip).find((it: any) => it && it.uid === a.gearUid);
+      const maxSockets = item ? (item.sockets || 0) : 3;
+      if (a.slotIndex < 0 || a.slotIndex >= maxSockets) return s;
       const slot = gearRuneData.runes[a.slotIndex];
       if (!slot.runeId) return s;
       const newRunes = [...gearRuneData.runes];
@@ -2309,7 +2463,7 @@ export function reducer(s: GameState, a: Action): GameState {
           gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
           inventory: existingInv 
             ? s.runes.inventory.map(i => i.runeId === slot.runeId ? { ...i, count: i.count + 1 } : i)
-            : [...s.runes.inventory, { runeId: slot.runeId, count: 1 }],
+            : [...s.runes.inventory, { runeId: slot.runeId, count: 1, rank: slot.rank }],
         },
       };
     }

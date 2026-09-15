@@ -961,14 +961,15 @@ function runKill(st: GameState) {
   const giveItem = (it: Item) => {
     st.totals.items += 1;
     if (it.rarity === 4) st.totals.legendaries += 1;
+    const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
     if (autoSellItem(st, it)) {
-      st.run.goldEarned += Math.max(1, Math.round(it.sell * AUTO_SELL_RATE));
+      st.run.goldEarned += Math.max(1, Math.round(sellValue * AUTO_SELL_RATE));
       return;
     }
     if (st.inv.length >= INV_CAP) {
-      st.hero.gold += it.sell; st.totals.goldEarned += it.sell;
-      st.run.goldEarned += it.sell;
-      st.battle.log = [`Рюкзак полон: «${it.name}» продан за ${it.sell} зол.`, ...st.battle.log].slice(0, 6);
+      st.hero.gold += sellValue; st.totals.goldEarned += sellValue;
+      st.run.goldEarned += sellValue;
+      st.battle.log = [`Рюкзак полон: «${it.name}» продан за ${sellValue} зол.`, ...st.battle.log].slice(0, 6);
     } else {
       st.inv = [...st.inv, it];
       toast(st, `Добыча: ${it.name}`, "loot");
@@ -1039,9 +1040,10 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
     st.uidSeq += 1;
     const it = genAbyssItem(st.hero.level * 4 + reached * 2 + 8 + depth * 6, st.uidSeq, st.hero.classId, reached);
     st.totals.items += 1;
+    const sellValueIt = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
     if (autoSellItem(st, it)) { /* автопродажа уже выдала золото */ }
     else if (st.inv.length < INV_CAP) { st.inv = [...st.inv, it]; toast(st, `Награда Портала: ${it.name}`, "loot"); }
-    else { st.hero.gold += it.sell; st.totals.goldEarned += it.sell; }
+    else { st.hero.gold += sellValueIt; st.totals.goldEarned += sellValueIt; }
     // сет Атласа (шанс)
     if (Math.random() < 0.5) {
       const pool = allSetPool(depth);
@@ -1050,14 +1052,15 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
         st.uidSeq += 1;
         const sit = genSetItem(sdef.id, st.hero.level * 3 + depth * 10, st.hero.classId, st.uidSeq);
         st.totals.items += 1; st.totals.setPieces += 1;
+        const sellValueSit = typeof sit.sell === "number" && sit.sell > 0 ? sit.sell : 1;
         if (autoSellItem(st, sit)) { /* автопродажа уже выдала золото */ }
         else if (st.inv.length < INV_CAP) {
           st.inv = [...st.inv, sit];
           toast(st, `Сет «${sdef.name}»: ${sit.name}`, "loot");
         } else {
-          st.hero.gold += sit.sell;
-          st.totals.goldEarned += sit.sell;
-          toast(st, `Рюкзак полон: сет продан за ${sit.sell} зол.`, "gold");
+          st.hero.gold += sellValueSit;
+          st.totals.goldEarned += sellValueSit;
+          toast(st, `Рюкзак полон: сет продан за ${sellValueSit} зол.`, "gold");
         }
       }
     }
@@ -1141,13 +1144,14 @@ function heroHit(st: GameState, stats: Stats, mult: number) {
 function giveItemDrop(st: GameState, it: Item) {
   st.totals.items += 1;
   if (it.rarity === 4) st.totals.legendaries += 1;
+  const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
   if (autoSellItem(st, it)) {
     return;
   }
   if (st.inv.length >= INV_CAP) {
-    st.hero.gold += it.sell;
-    st.totals.goldEarned += it.sell;
-    pushLog(st, `Рюкзак полон: «${it.name}» продан за ${it.sell} зол.`);
+    st.hero.gold += sellValue;
+    st.totals.goldEarned += sellValue;
+    pushLog(st, `Рюкзак полон: «${it.name}» продан за ${sellValue} зол.`);
   } else {
     st.inv = [...st.inv, it];
     toast(st, `Добыча: ${it.name}`, "loot");
@@ -1295,6 +1299,36 @@ function killEnemy(st: GameState, stats: Stats) {
   const dropChance = (e.boss ? b.bossDropChance : b.dropBaseChance) + stats.luck / 100;
   if (Math.random() < dropChance) dropItem(st, stats, e.boss);
   if (e.boss && Math.random() < b.bossExtraChance) dropItem(st, stats, true);
+  
+  // Дроп рун: с боссов и элиток (волны 5, 10 в зоне)
+  // Босс: 30% шанс руны, элитка (волна 5, 10): 15% шанс
+  const isEliteWave = st.battle.wave === 5 || st.battle.wave === 10;
+  let runeDropChance = 0;
+  if (e.boss) {
+    runeDropChance = 0.30; // 30% с босса
+  } else if (isEliteWave) {
+    runeDropChance = 0.15; // 15% с элитки
+  }
+  if (runeDropChance > 0 && Math.random() < runeDropChance) {
+    // Выбираем случайную руну
+    const randomRune = RUNES[Math.floor(Math.random() * RUNES.length)];
+    if (randomRune) {
+      const existingRune = st.runes.inventory.find(i => i.runeId === randomRune.id);
+      if (existingRune) {
+        st.runes = {
+          ...st.runes,
+          inventory: st.runes.inventory.map(i => i.runeId === randomRune.id ? { ...i, count: i.count + 1 } : i),
+        };
+      } else {
+        st.runes = {
+          ...st.runes,
+          inventory: [...st.runes.inventory, { runeId: randomRune.id, count: 1 }],
+        };
+      }
+      pushLog(st, `С ${e.boss ? 'босса' : 'элитного врага'} выпала руна: ${randomRune.name}!`);
+      toast(st, `Получена руна: ${randomRune.name}`, "loot");
+    }
+  }
 
   pushLog(st, KILL_PHRASES[Math.floor(Math.random() * KILL_PHRASES.length)].replace("{e}", e.name));
 
@@ -1440,7 +1474,8 @@ export function reducer(s: GameState, a: Action): GameState {
       const st = { ...s, inv: [...s.inv], hero: { ...s.hero } };
       let gold = 0;
       for (const it of a.items) {
-        if (st.inv.length >= INV_CAP) { gold += it.sell; continue; }
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
+        if (st.inv.length >= INV_CAP) { gold += sellValue; continue; }
         st.inv = [...st.inv, it];
       }
       if (gold > 0) { st.hero.gold += gold; st.totals.goldEarned += gold; toast(st, `Рюкзак полон: часть наград продана за ${gold} зол.`, "gold"); }
@@ -1531,8 +1566,10 @@ export function reducer(s: GameState, a: Action): GameState {
     case "SELL": {
       const it = s.inv.find(i => i.uid === a.uid);
       if (!it) return s;
-      const st = { ...s, inv: s.inv.filter(i => i.uid !== a.uid), hero: { ...s.hero, gold: s.hero.gold + it.sell }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + it.sell } };
-      toast(st, `Продано за ${it.sell} зол.`, "gold");
+      // Защита от предметов без цены (кастомные предметы без sell)
+      const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
+      const st = { ...s, inv: s.inv.filter(i => i.uid !== a.uid), hero: { ...s.hero, gold: s.hero.gold + sellValue }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + sellValue } };
+      toast(st, `Продано за ${sellValue} зол.`, "gold");
       return st;
     }
 
@@ -1583,11 +1620,12 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, def.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (autoSellItem(st, it)) {
           // автопродажа уже выдала золото
         } else if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -1653,9 +1691,10 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, r.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -1682,9 +1721,10 @@ export function reducer(s: GameState, a: Action): GameState {
         const it = genItem(ilvl, r.minRarity ?? 0, st.hero.classId, getStats(s).luck, st.uidSeq, base);
         st.totals.items += 1;
         if (it.rarity === 4) st.totals.legendaries += 1;
+        const sellValue = typeof it.sell === "number" && it.sell > 0 ? it.sell : 1;
         if (st.inv.length >= INV_CAP) {
-          st.hero.gold += it.sell;
-          st.totals.goldEarned += it.sell;
+          st.hero.gold += sellValue;
+          st.totals.goldEarned += sellValue;
           toast(st, `Рюкзак полон — ${it.name} сразу продан`, "gold");
         } else {
           st.inv.push(it);
@@ -2199,6 +2239,20 @@ export function reducer(s: GameState, a: Action): GameState {
       let newState = { ...s, battlePass: { ...s.battlePass, claimedFree: [...s.battlePass.claimedFree, a.tier] } };
       if (reward.type === "gold") newState.hero = { ...newState.hero, gold: newState.hero.gold + (reward.amount || 0) };
       if (reward.type === "gems") newState.hero = { ...newState.hero, gems: newState.hero.gems + (reward.amount || 0) };
+      if (reward.type === "rune" && reward.runeId) {
+        const existingRune = newState.runes.inventory.find(i => i.runeId === reward.runeId);
+        if (existingRune) {
+          newState.runes = {
+            ...newState.runes,
+            inventory: newState.runes.inventory.map(i => i.runeId === reward.runeId ? { ...i, count: i.count + 1 } : i),
+          };
+        } else {
+          newState.runes = {
+            ...newState.runes,
+            inventory: [...newState.runes.inventory, { runeId: reward.runeId, count: 1 }],
+          };
+        }
+      }
       return newState;
     }
     

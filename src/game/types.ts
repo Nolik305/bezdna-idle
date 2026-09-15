@@ -18,6 +18,7 @@ export interface Item {
   sell: number;
   abyss?: boolean; // предмет Сета Бездны
   set?: string; // id сета (атлас)
+  sockets?: number; // количество гнёзд для рун (0-3)
 }
 
 export interface Enemy {

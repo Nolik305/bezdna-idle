@@ -218,6 +218,59 @@ export function getStats(s: GameState): Stats {
     if (m.xpPct) xpPct += m.xpPct * r;
   }
 
+  // Бонусы престижа
+  for (const [statId, rank] of Object.entries(s.prestige.bonuses)) {
+    if (!rank) continue;
+    const bonusDef = PRESTIGE_BONUSES.find(b => b.id === statId);
+    if (!bonusDef) continue;
+    switch (statId) {
+      case "dmgPct": dmgPct += bonusDef.valuePerLevel * rank; break;
+      case "hpPct": hpPct += bonusDef.valuePerLevel * rank; break;
+      case "goldPct": goldPct += bonusDef.valuePerLevel * rank; break;
+      case "xpPct": xpPct += bonusDef.valuePerLevel * rank; break;
+      case "crit": crit += bonusDef.valuePerLevel * rank; break;
+      case "critDmg": critDmg += bonusDef.valuePerLevel * rank; break;
+    }
+  }
+
+  // Бонусы бестиария
+  for (const [statKey, value] of Object.entries(s.bestiary.collectionBonus || {})) {
+    if (!value) continue;
+    switch (statKey) {
+      case "dmgPct": dmgPct += value; break;
+      case "hpPct": hpPct += value; break;
+      case "goldPct": goldPct += value; break;
+      case "xpPct": xpPct += value; break;
+      case "crit": crit += value; break;
+      case "armor": armor += value; break;
+    }
+  }
+
+  // Бонусы питомцев
+  if (s.pet.unlocked && s.pet.equipped) {
+    const petDef = PETS.find(p => p.id === s.pet.equipped);
+    if (petDef) {
+      const petData = s.pet.pets[s.pet.equipped];
+      const petLevel = petData?.level || 1;
+      const levelMult = 1 + (petLevel - 1) * 0.1; // +10% за каждый уровень
+      for (const [statKey, baseValue] of Object.entries(petDef.passiveBonus || {})) {
+        const value = (baseValue || 0) * levelMult;
+        switch (statKey) {
+          case "dmgPct": dmgPct += value; break;
+          case "hpPct": hpPct += value; break;
+          case "goldPct": goldPct += value; break;
+          case "xpPct": xpPct += value; break;
+          case "crit": crit += value; break;
+          case "critDmg": critDmg += value; break;
+          case "armor": armor += value; break;
+          case "regen": regen += value; break;
+        }
+      }
+      if (petDef.lifesteal) lifesteal += petDef.lifesteal * levelMult;
+      if (petDef.dodge) dodge += petDef.dodge * levelMult;
+    }
+  }
+
   let dmgBuff = 1, luckBuff = 0;
   for (const b of s.buffs) { if (b.dmgMult) dmgBuff *= b.dmgMult; if (b.luckAdd) luckBuff += b.luckAdd; }
   // бусты из магазина: свитки золота/опыта (+100% на 5 мин)
@@ -2016,29 +2069,112 @@ export function reducer(s: GameState, a: Action): GameState {
       };
     }
     
+    case "GUILD_BOSS_START": {
+      if (s.guildBoss && s.guildBoss.active && !s.guildBoss.claimed) return s; // нельзя начать, пока не забрали награду
+      const now = Date.now();
+      const durationMs = 24 * 60 * 60 * 1000; // 24 часа
+      const bossLevel = Math.max(1, Math.floor(s.hero.level / 5)); // уровень босса зависит от уровня героя
+      const baseHp = 10000 * Math.pow(1.5, bossLevel - 1);
+      const baseDmg = 50 * Math.pow(1.3, bossLevel - 1);
+      const boss: GuildBossS = {
+        active: true,
+        bossKey: `guild_boss_${bossLevel}`,
+        bossName: `Гильдейский Босс ${bossLevel} ур.`,
+        bossHp: Math.floor(baseHp),
+        bossMaxHp: Math.floor(baseHp),
+        bossDmg: Math.floor(baseDmg),
+        hp: Math.floor(baseHp),
+        maxHp: Math.floor(baseHp),
+        name: `Босс Гильдии`,
+        level: bossLevel,
+        timeElapsed: 0,
+        personalDamage: 0,
+        attacksLeft: 3,
+        expiresAt: now + durationMs,
+        damageDealt: 0,
+        guildDamage: 0,
+        rewardPending: false,
+        rewardClaimed: false,
+        claimed: false,
+        leaderboard: [],
+      };
+      return { ...s, guildBoss: boss };
+    }
+    
     case "GUILD_BOSS_ATTACK": {
-      if (!s.guildBoss || !s.guildBoss.active) return s;
+      if (!s.guildBoss || !s.guildBoss.active || s.guildBoss.claimed) return s;
+      if (s.guildBoss.attacksLeft <= 0) return s;
+      if (s.guildBoss.hp <= 0) return s; // босс уже мёртв
+      
       const stats = getStats(s);
       const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * 10);
       const newHp = Math.max(0, s.guildBoss.bossHp - damage);
+      const newPersonalDamage = s.guildBoss.personalDamage + damage;
+      const newGuildDamage = s.guildBoss.guildDamage + damage;
+      
+      // Обновление лидерборда
+      const playerName = s.hero.name || "Игрок";
+      let leaderboard = [...(s.guildBoss.leaderboard || [])];
+      const existingEntry = leaderboard.find(e => e.name === playerName);
+      if (existingEntry) {
+        existingEntry.damage += damage;
+      } else {
+        leaderboard.push({ name: playerName, damage, losses: 0 });
+      }
+      leaderboard.sort((a, b) => b.damage - a.damage);
+      
+      // Проверка смерти босса
+      const bossDead = newHp <= 0;
+      const rewardPending = bossDead && !s.guildBoss.rewardPending;
+      
       return {
         ...s,
         guildBoss: {
           ...s.guildBoss,
           hp: newHp,
           bossHp: newHp,
-          damageDealt: s.guildBoss.damageDealt + damage,
-          guildDamage: s.guildBoss.guildDamage + damage,
+          personalDamage: newPersonalDamage,
+          damageDealt: newPersonalDamage, // для совместимости
+          guildDamage: newGuildDamage,
+          attacksLeft: s.guildBoss.attacksLeft - 1,
+          leaderboard,
+          rewardPending: rewardPending ? true : s.guildBoss.rewardPending,
         },
       };
     }
     
     case "GUILD_BOSS_CLAIM": {
       if (!s.guildBoss || !s.guildBoss.active || s.guildBoss.claimed) return s;
-      const reward = Math.floor(s.guildBoss.damageDealt / 1000);
+      
+      // Можно забрать награду, если босс мёртв ИЛИ время вышло
+      const now = Date.now();
+      const timeExpired = now >= s.guildBoss.expiresAt;
+      const bossDead = s.guildBoss.hp <= 0;
+      
+      if (!bossDead && !timeExpired) return s; // ещё рано
+      
+      // Расчет награды пропорционально вкладу игрока
+      let reward = 0;
+      if (s.guildBoss.guildDamage > 0 && s.guildBoss.personalDamage > 0) {
+        const totalReward = 5000 * s.guildBoss.level; // базовая награда * уровень босса
+        reward = Math.floor((s.guildBoss.personalDamage / s.guildBoss.guildDamage) * totalReward);
+      }
+      
+      // Бонус за топ-1 в лидерборде
+      const isTop1 = s.guildBoss.leaderboard && s.guildBoss.leaderboard.length > 0 && 
+                     s.guildBoss.leaderboard[0].name === (s.hero.name || "Игрок");
+      if (isTop1) {
+        reward = Math.floor(reward * 1.2); // +20% бонус
+      }
+      
       return {
         ...s,
-        guildBoss: { ...s.guildBoss, claimed: true },
+        guildBoss: { 
+          ...s.guildBoss, 
+          claimed: true, 
+          rewardClaimed: true,
+          rewardPending: false,
+        },
         hero: { ...s.hero, gold: s.hero.gold + reward },
       };
     }
@@ -2071,27 +2207,72 @@ export function reducer(s: GameState, a: Action): GameState {
       };
     }
     
-    case "PET_EQUIP": {
+    case "PET_UNLOCK": {
       const pet = PETS.find(p => p.id === a.petId);
-      if (!pet || !s.pet.unlocked || s.hero.level < pet.unlockLevel) return s;
+      if (!pet || s.pet.owned.includes(a.petId)) return s;
+      // Бесплатных питомцев можно разблокировать сразу, платных — через Battle Pass или магазин
+      if (!pet.free && !s.battlePass.premium) return s;
       return {
         ...s,
-        pet: { ...s.pet, petId: a.petId },
+        pet: {
+          ...s.pet,
+          unlocked: true,
+          owned: [...s.pet.owned, a.petId],
+          pets: {
+            ...s.pet.pets,
+            [a.petId]: { level: 1, xp: 0, stars: 0 },
+          },
+        },
+      };
+    }
+    
+    case "PET_EQUIP": {
+      const pet = PETS.find(p => p.id === a.petId);
+      if (!pet || !s.pet.owned.includes(a.petId) || s.hero.level < pet.unlockLevel) return s;
+      return {
+        ...s,
+        pet: { ...s.pet, equipped: a.petId },
       };
     }
     
     case "PET_LEVEL_UP": {
+      const petDef = PETS.find(p => p.id === a.petId);
       const petData = s.pet.pets[a.petId];
-      if (!petData) return s;
-      const xpNeeded = Math.floor(100 * Math.pow(1.5, petData.level));
+      if (!petDef || !petData) return s;
+      const cost = petDef.levelUpCost * petData.level;
+      if (s.hero.gems < cost) return s;
+      const xpNeeded = petData.level * 500;
       if (petData.xp < xpNeeded) return s;
       return {
         ...s,
+        hero: { ...s.hero, gems: s.hero.gems - cost },
         pet: {
           ...s.pet,
           pets: {
             ...s.pet.pets,
             [a.petId]: { ...petData, level: petData.level + 1, xp: petData.xp - xpNeeded },
+          },
+        },
+      };
+    }
+    
+    case "PET_FEED": {
+      const petDef = PETS.find(p => p.id === a.petId);
+      const petData = s.pet.pets[a.petId];
+      const item = s.inv.find(i => i.uid === a.itemId);
+      if (!petDef || !petData || !item) return s;
+      // Удаляем предмет из инвентаря
+      const newInv = s.inv.filter(i => i.uid !== a.itemId);
+      // Даём XP питомцу: зависит от редкости предмета
+      const xpGain = [50, 100, 200, 400, 800, 1500][item.rarity] || 50;
+      return {
+        ...s,
+        inv: newInv,
+        pet: {
+          ...s.pet,
+          pets: {
+            ...s.pet.pets,
+            [a.petId]: { ...petData, xp: petData.xp + xpGain },
           },
         },
       };
@@ -2329,6 +2510,28 @@ function tick(s: GameState, dt: number): GameState {
     if (current.daily.date !== s.daily.date) toast(current, "Новый день: +1 жетон дуэлей", "gem");
   }
   const st = current.party ? partyTick(current, dt) : current.run.active ? runTick(current, dt) : farmTick(current, dt);
+  
+  // Обновление таймера гильдийского босса
+  if (st.guildBoss && st.guildBoss.active && !st.guildBoss.claimed) {
+    const updatedGuildBoss = {
+      ...st.guildBoss,
+      timeElapsed: st.guildBoss.timeElapsed + dt,
+    };
+    
+    // Проверка истечения времени
+    const now = Date.now();
+    if (now >= updatedGuildBoss.expiresAt && !updatedGuildBoss.rewardPending) {
+      updatedGuildBoss.rewardPending = true;
+    }
+    
+    // Проверка смерти босса (если вдруг не было проверено при атаке)
+    if (updatedGuildBoss.hp <= 0 && !updatedGuildBoss.rewardPending) {
+      updatedGuildBoss.rewardPending = true;
+    }
+    
+    return { ...st, guildBoss: updatedGuildBoss };
+  }
+  
   if (st.duel.state === "idle" && !st.duel.fx.length) return st;
   const d2: GameState = {
     ...st, hero: { ...st.hero }, totals: { ...st.totals },

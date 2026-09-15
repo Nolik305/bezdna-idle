@@ -568,13 +568,16 @@ export type Action =
   | { type: "PRESTIGE_BUY_BONUS"; stat: string }
   | { type: "PRESTIGE_BUY_TALENT"; talentId: string }
   | { type: "BESTIARY_CLAIM"; mobKey: string }
+  | { type: "GUILD_BOSS_START" }
   | { type: "GUILD_BOSS_ATTACK" }
   | { type: "GUILD_BOSS_CLAIM" }
   | { type: "BATTLE_PASS_CLAIM_FREE"; tier: number }
   | { type: "BATTLE_PASS_CLAIM_PREMIUM"; tier: number }
   | { type: "BATTLE_PASS_BUY_PREMIUM" }
+  | { type: "PET_UNLOCK"; petId: string }
   | { type: "PET_EQUIP"; petId: string }
   | { type: "PET_LEVEL_UP"; petId: string }
+  | { type: "PET_FEED"; petId: string; itemId: number }
   | { type: "TOURNAMENT_FIGHT" }
   | { type: "TOURNAMENT_CLAIM_REWARD"; position: number }
   | { type: "RUNE_INSERT"; gearUid: number; slotIndex: number; runeId: string }

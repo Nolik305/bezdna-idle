@@ -234,3 +234,62 @@
 .hero-layer-amulet {
   transform-origin: 50px 60px;
 }
+
+/* ============ АНИМАЦИИ ПИТОМЦЕВ ============ */
+@keyframes pet-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes pet-float {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 1; }
+  50% { transform: translateY(-3px) scale(1.05); opacity: 0.9; }
+}
+
+@keyframes pet-stomp {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(1px) scaleY(0.98); }
+}
+
+@keyframes pet-fly {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(2deg); }
+  75% { transform: translateY(-1px) rotate(-2deg); }
+}
+
+@keyframes pet-hover {
+  0%, 100% { transform: translateY(0) scale(1); }
+  33% { transform: translateY(-2px) scale(1.02); }
+  66% { transform: translateY(-1px) scale(0.98); }
+}
+
+.pet-animate-bob {
+  animation: pet-bob 1.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pet-animate-float {
+  animation: pet-float 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pet-animate-stomp {
+  animation: pet-stomp 1.2s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.pet-animate-fly {
+  animation: pet-fly 1.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pet-animate-hover {
+  animation: pet-hover 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.pet-svg-container svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

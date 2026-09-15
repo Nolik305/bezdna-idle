@@ -963,14 +963,108 @@ export interface PetDef {
   bonusDescription: string; // описание пассивного бонуса
   levelUpCost: number; // стоимость повышения уровня
   unlockLevel: number;
+  svg?: string; // SVG спрайт питомца
 }
 
+// SVG шаблоны для питомцев
+const PET_SVGS: Record<string, string> = {
+  imp: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="impGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ff6b6b"/>
+        <stop offset="100%" style="stop-color:#c92a2a"/>
+      </linearGradient>
+    </defs>
+    <g class="pet-animate-bob">
+      <ellipse cx="16" cy="20" rx="8" ry="7" fill="url(#impGrad)"/>
+      <circle cx="12" cy="18" r="2.5" fill="#fff"/>
+      <circle cx="20" cy="18" r="2.5" fill="#fff"/>
+      <circle cx="13" cy="18" r="1" fill="#000"/>
+      <circle cx="21" cy="18" r="1" fill="#000"/>
+      <path d="M14 22 Q16 24 18 22" stroke="#000" stroke-width="1.5" fill="none"/>
+      <path d="M8 14 L12 18 M24 14 L20 18" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
+      <ellipse cx="16" cy="12" rx="3" ry="4" fill="#ff8787" opacity="0.8"/>
+    </g>
+  </svg>`,
+  wisp: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="wispGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" style="stop-color:#fff"/>
+        <stop offset="30%" style="stop-color:#74c0fc"/>
+        <stop offset="100%" style="stop-color:#1864ab" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g class="pet-animate-float">
+      <circle cx="16" cy="16" r="10" fill="url(#wispGrad)"/>
+      <circle cx="14" cy="14" r="3" fill="#fff" opacity="0.8"/>
+      <circle cx="18" cy="18" r="2" fill="#fff" opacity="0.6"/>
+      <circle cx="16" cy="16" r="4" fill="#74c0fc" opacity="0.3"/>
+    </g>
+  </svg>`,
+  golem: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="golemGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#a8a8a8"/>
+        <stop offset="100%" style="stop-color:#495057"/>
+      </linearGradient>
+    </defs>
+    <g class="pet-animate-stomp">
+      <rect x="10" y="12" width="12" height="14" rx="2" fill="url(#golemGrad)"/>
+      <rect x="8" y="16" width="4" height="8" rx="1" fill="#868e96"/>
+      <rect x="20" y="16" width="4" height="8" rx="1" fill="#868e96"/>
+      <circle cx="14" cy="16" r="2" fill="#ffa94d"/>
+      <circle cx="18" cy="16" r="2" fill="#ffa94d"/>
+      <rect x="12" y="22" width="8" height="2" rx="1" fill="#495057"/>
+      <rect x="14" y="8" width="4" height="4" fill="#868e96"/>
+    </g>
+  </svg>`,
+  raven: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="ravenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#212529"/>
+        <stop offset="100%" style="stop-color:#495057"/>
+      </linearGradient>
+    </defs>
+    <g class="pet-animate-fly">
+      <ellipse cx="16" cy="18" rx="7" ry="5" fill="url(#ravenGrad)"/>
+      <path d="M9 16 L4 10 L9 18 Z" fill="#212529"/>
+      <path d="M23 16 L28 10 L23 18 Z" fill="#212529"/>
+      <circle cx="14" cy="16" r="1.5" fill="#ff6b6b"/>
+      <circle cx="18" cy="16" r="1.5" fill="#ff6b6b"/>
+      <path d="M16 19 L16 22 L14 21 L18 21 Z" fill="#ffa94d"/>
+      <path d="M10 14 L6 8 L10 16" stroke="#212529" stroke-width="2" fill="none"/>
+      <path d="M22 14 L26 8 L22 16" stroke="#212529" stroke-width="2" fill="none"/>
+    </g>
+  </svg>`,
+  dragon_whelp: `<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="dragonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:#ff922b"/>
+        <stop offset="100%" style="stop-color:#d9480f"/>
+      </linearGradient>
+    </defs>
+    <g class="pet-animate-hover">
+      <ellipse cx="16" cy="20" rx="9" ry="7" fill="url(#dragonGrad)"/>
+      <path d="M7 18 L3 12 L8 17 Z" fill="#ff6b35"/>
+      <path d="M25 18 L29 12 L24 17 Z" fill="#ff6b35"/>
+      <circle cx="13" cy="18" r="2.5" fill="#fff"/>
+      <circle cx="19" cy="18" r="2.5" fill="#fff"/>
+      <circle cx="14" cy="18" r="1" fill="#000"/>
+      <circle cx="20" cy="18" r="1" fill="#000"/>
+      <path d="M16 22 L16 26 L14 25 L18 25 Z" fill="#ffd43b"/>
+      <path d="M12 14 L10 10 L14 13 Z" fill="#ff6b35"/>
+      <path d="M20 14 L22 10 L18 13 Z" fill="#ff6b35"/>
+      <ellipse cx="16" cy="26" rx="4" ry="2" fill="#d9480f" opacity="0.5"/>
+    </g>
+  </svg>`,
+};
+
 export const PETS: PetDef[] = [
-  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2 as Rarity, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10 },
-  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3 as Rarity, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20 },
-  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3 as Rarity, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25 },
-  { id: "raven", name: "Ворон", icon: "raven", rarity: 4 as Rarity, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35 },
-  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5 as Rarity, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50 },
+  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2 as Rarity, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10, svg: PET_SVGS.imp },
+  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3 as Rarity, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20, svg: PET_SVGS.wisp },
+  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3 as Rarity, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25, svg: PET_SVGS.golem },
+  { id: "raven", name: "Ворон", icon: "raven", rarity: 4 as Rarity, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35, svg: PET_SVGS.raven },
+  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5 as Rarity, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50, svg: PET_SVGS.dragon_whelp },
 ];
 
 /* ================= РУНЫ ================= */

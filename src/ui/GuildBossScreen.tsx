@@ -12,7 +12,12 @@ export function GuildBossScreen() {
         <Icon n="skull" className="w-16 h-16 text-dim mx-auto mb-4" />
         <h2 className="text-lg font-display text-fog">Гильдейский босс</h2>
         <p className="text-[11px] text-dim mt-2">Босс не активирован</p>
-        <p className="text-[10px] text-dim mt-1">Попросите лидера гильдии начать рейд</p>
+        <button
+          onClick={() => d({ type: "GUILD_BOSS_START" })}
+          className="mt-4 px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-lg font-bold transition-all"
+        >
+          НАЧАТЬ РЕЙД
+        </button>
       </div>
     );
   }

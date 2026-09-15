@@ -76,11 +76,30 @@ function generateWeeklyQuests(): { id: string; description: string; progress: nu
     id: `weekly_${q.id}_${idx}`,
     description: q.desc,
     progress: 0,
-    target: q.id === "boss_kills" ? 10 : q.id === "prestige" ? 1 : q.id === "duel_wins" ? 5 : q.id === "guild_donation" ? 10000 : 50,
+    target: q.target ?? (q.id === "boss_kills" ? 10 : q.id === "prestige" ? 1 : q.id === "duel_wins" ? 5 : q.id === "guild_donation" ? 10000 : 50),
     xpReward: q.xp,
     icon: q.id === "boss_kills" ? "skull" : q.id === "prestige" ? "spark" : q.id === "duel_wins" ? "sword" : q.id === "guild_donation" ? "coin" : "tower",
     claimed: false,
   }));
+}
+
+/** Обновляет прогресс еженедельных квестов */
+function updateWeeklyQuestsProgress(battlePass: any, questType: string, amount: number): void {
+  if (!battlePass?.weeklyQuests) return;
+  battlePass.weeklyQuests = battlePass.weeklyQuests.map((quest: any) => {
+    if (quest.claimed) return quest;
+    let matches = false;
+    if (questType === "boss_kills" && quest.id.includes("boss")) matches = true;
+    if (questType === "kills" && quest.id.includes("kill") && !quest.id.includes("boss")) matches = true;
+    if (questType === "gold" && quest.id.includes("gold")) matches = true;
+    if (questType === "prestige" && quest.id.includes("prestige")) matches = true;
+    if (questType === "duel_wins" && quest.id.includes("duel")) matches = true;
+    if (questType === "guild_donation" && quest.id.includes("guild")) matches = true;
+    if (matches) {
+      return { ...quest, progress: Math.min(quest.target, quest.progress + amount) };
+    }
+    return quest;
+  });
 }
 
 export function fmt(n: number): string {
@@ -756,6 +775,8 @@ function duelFinish(st: GameState, win: boolean): GameState {
     if (Math.random() < 0.3) { st.duel.tokens = Math.min(DUEL_TOKENS_MAX, st.duel.tokens + 1); }
     if (Math.random() < 0.08) { st.hero.gems += 3; }
     st.duel.log = [`${foe?.name} повержен! MMR ${delta >= 0 ? "+" : ""}${delta}`, ...st.duel.log].slice(0, 5);
+    // Обновляем квест Battle Pass на победы в дуэлях
+    updateWeeklyQuestsProgress(st.battlePass, "duel_wins", 1);
   } else {
     st.duel.losses += 1;
     reward = Math.round(20 + st.duel.mmr * 0.03);
@@ -1204,6 +1225,9 @@ function killEnemy(st: GameState, stats: Stats) {
   gainSeasonal(st, "gold", gold);
   pushFx(st, `+${fmt(gold)}`, "gold", 40 + Math.random() * 20, 55);
   
+  // Обновляем квесты Battle Pass на золото
+  updateWeeklyQuestsProgress(st.battlePass, "gold", gold);
+  
   const xpGain = Math.round(e.xp * (1 + stats.xpPct / 100));
   gainXp(st, xpGain);
   
@@ -1221,6 +1245,13 @@ function killEnemy(st: GameState, stats: Stats) {
       };
       toast(st, `Battle Pass: уровень ${st.battlePass.level}!`, "gem");
     }
+  }
+  
+  // Обновляем квесты Battle Pass на убийства
+  if (e.boss) {
+    updateWeeklyQuestsProgress(st.battlePass, "boss_kills", 1);
+  } else {
+    updateWeeklyQuestsProgress(st.battlePass, "kills", 1);
   }
 
   const b = getBalance();
@@ -2064,7 +2095,7 @@ export function reducer(s: GameState, a: Action): GameState {
       if (s.battle.zone < PRESTIGE_CONFIG.minZone) return s;
       const essenceGain = Math.floor(s.battle.zone * PRESTIGE_CONFIG.essencePerZone);
       const talentPoints = s.prestige.count * PRESTIGE_CONFIG.talentPointsPerPrestige;
-      return {
+      const newState = {
         ...s,
         prestige: {
           count: s.prestige.count + 1,
@@ -2079,6 +2110,9 @@ export function reducer(s: GameState, a: Action): GameState {
         bossDone: new Array(PRESTIGE_CONFIG.minZone).fill(false),
         meta: { ...s.meta, prestigeCount: s.prestige.count + 1 },
       };
+      // Обновляем квест Battle Pass на престиж
+      updateWeeklyQuestsProgress(newState.battlePass, "prestige", 1);
+      return newState;
     }
     
     case "PRESTIGE_BUY_BONUS": {

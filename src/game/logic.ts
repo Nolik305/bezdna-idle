@@ -2228,7 +2228,7 @@ export function reducer(s: GameState, a: Action): GameState {
     
     case "PET_EQUIP": {
       const pet = PETS.find(p => p.id === a.petId);
-      if (!pet || !s.pet.owned.includes(a.petId) || s.hero.level < pet.unlockLevel) return s;
+      if (!pet || !s.pet.owned.includes(a.petId)) return s;
       return {
         ...s,
         pet: { ...s.pet, equipped: a.petId },

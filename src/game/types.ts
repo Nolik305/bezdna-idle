@@ -573,6 +573,7 @@ export type Action =
   | { type: "BATTLE_PASS_CLAIM_FREE"; tier: number }
   | { type: "BATTLE_PASS_CLAIM_PREMIUM"; tier: number }
   | { type: "BATTLE_PASS_BUY_PREMIUM" }
+  | { type: "BATTLE_PASS_CLAIM_QUEST"; questIndex: number; isWeekly: boolean }
   | { type: "PET_EQUIP"; petId: string }
   | { type: "PET_LEVEL_UP"; petId: string }
   | { type: "TOURNAMENT_FIGHT" }

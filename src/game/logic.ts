@@ -15,6 +15,7 @@ import {
   PRESTIGE_CONFIG, PRESTIGE_BONUSES, PRESTIGE_TALENTS,
   BESTIARY_BONUSES,
   BATTLE_PASS_CONFIG, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM,
+  BATTLE_PASS_QUESTS_WEEKLY,
   PETS,
   RUNES, RUNE_SETS,
   BASE_BUILDINGS,
@@ -59,6 +60,28 @@ export const respawnTime = (vip: number) =>
 export const DEATH_WAVE_ROLLBACK = 10;
 
 export const emptyWeekly = () => ({ week: weekKey(), kills: 0, bosses: 0, gold: 0, casts: 0, resources: 0, claimed: [] as string[] });
+
+/** Генерирует еженедельные квесты для Battle Pass */
+function generateWeeklyQuests(): { id: string; description: string; progress: number; target: number; xpReward: number; icon: string; claimed: boolean }[] {
+  const quests = BATTLE_PASS_QUESTS_WEEKLY;
+  const selected: typeof quests = [];
+  // Выбираем 5 случайных квестов из пула
+  const pool = [...quests];
+  for (let i = 0; i < 5 && pool.length > 0; i++) {
+    const idx = Math.floor(Math.random() * pool.length);
+    const quest = pool.splice(idx, 1)[0];
+    selected.push(quest);
+  }
+  return selected.map((q, idx) => ({
+    id: `weekly_${q.id}_${idx}`,
+    description: q.desc,
+    progress: 0,
+    target: q.id === "boss_kills" ? 10 : q.id === "prestige" ? 1 : q.id === "duel_wins" ? 5 : q.id === "guild_donation" ? 10000 : 50,
+    xpReward: q.xp,
+    icon: q.id === "boss_kills" ? "skull" : q.id === "prestige" ? "spark" : q.id === "duel_wins" ? "sword" : q.id === "guild_donation" ? "coin" : "tower",
+    claimed: false,
+  }));
+}
 
 export function fmt(n: number): string {
   if (n >= 1e9) return (n / 1e9).toFixed(1) + "Б";
@@ -216,6 +239,69 @@ export function getStats(s: GameState): Stats {
     if (m.luck) luck += m.luck * r;
     if (m.goldPct) goldPct += m.goldPct * r;
     if (m.xpPct) xpPct += m.xpPct * r;
+  }
+
+  // Бонусы от рун (сет-бонусы + индивидуальные)
+  const runeSetCounts: Record<string, number> = {};
+  const runeStatsKeys = Object.keys(RUNES[0]?.stats || {}) as (keyof Stats)[];
+  for (const gearRunes of Object.values(s.runes?.gear || {})) {
+    for (const slot of gearRunes.runes) {
+      if (!slot.runeId) continue;
+      const runeDef = RUNES.find(r => r.id === slot.runeId);
+      if (!runeDef) continue;
+      // Считаем количество рун каждого типа для сет-бонусов
+      runeSetCounts[slot.runeId] = (runeSetCounts[slot.runeId] || 0) + 1;
+      // Добавляем статы от руны с учётом ранга
+      const rankMult = slot.rank || 1;
+      for (const [statKey, statValue] of Object.entries(runeDef.stats)) {
+        const val = (statValue ?? 0) * rankMult;
+        switch (statKey) {
+          case "dmgPct": dmgPct += val; break;
+          case "hpPct": hpPct += val; break;
+          case "crit": crit += val; break;
+          case "critDmg": critDmg += val; break;
+          case "as": asPct += val; break;
+          case "goldPct": goldPct += val; break;
+          case "xpPct": xpPct += val; break;
+          case "luck": luck += val; break;
+          case "armor": armor += val; break;
+          case "regen": regen += val; break;
+          case "dotPct": dotPct += val; break;
+        }
+      }
+    }
+  }
+  // Применяем сет-бонусы рун (без уведомления, чтобы не спамить при каждом расчёте статов)
+  for (const setDef of RUNE_SETS) {
+    let setComplete = true;
+    const requiredRunes: Record<string, number> = {};
+    for (const runeId of setDef.runes) {
+      requiredRunes[runeId] = (requiredRunes[runeId] || 0) + 1;
+    }
+    for (const [runeId, needed] of Object.entries(requiredRunes)) {
+      if ((runeSetCounts[runeId] || 0) < needed) {
+        setComplete = false;
+        break;
+      }
+    }
+    if (setComplete) {
+      for (const [statKey, statValue] of Object.entries(setDef.bonus)) {
+        const val = statValue ?? 0;
+        switch (statKey) {
+          case "dmgPct": dmgPct += val; break;
+          case "hpPct": hpPct += val; break;
+          case "crit": crit += val; break;
+          case "critDmg": critDmg += val; break;
+          case "as": asPct += val; break;
+          case "goldPct": goldPct += val; break;
+          case "xpPct": xpPct += val; break;
+          case "luck": luck += val; break;
+          case "armor": armor += val; break;
+          case "regen": regen += val; break;
+          case "dotPct": dotPct += val; break;
+        }
+      }
+    }
   }
 
   let dmgBuff = 1, luckBuff = 0;
@@ -1117,7 +1203,25 @@ function killEnemy(st: GameState, stats: Stats) {
   st.weekly.gold += gold;
   gainSeasonal(st, "gold", gold);
   pushFx(st, `+${fmt(gold)}`, "gold", 40 + Math.random() * 20, 55);
-  gainXp(st, Math.round(e.xp * (1 + stats.xpPct / 100)));
+  
+  const xpGain = Math.round(e.xp * (1 + stats.xpPct / 100));
+  gainXp(st, xpGain);
+  
+  // Battle Pass XP за убийство (1 XP за каждые 10 опыта врага)
+  if (st.battlePass && st.battlePass.level < BATTLE_PASS_CONFIG.maxLevel) {
+    const bpXp = Math.floor(xpGain / 10);
+    st.battlePass = { ...st.battlePass, xp: st.battlePass.xp + bpXp };
+    // Проверка повышения уровня BP
+    const xpNeeded = st.battlePass.level * BATTLE_PASS_CONFIG.xpPerLevel;
+    if (st.battlePass.xp >= xpNeeded) {
+      st.battlePass = { 
+        ...st.battlePass, 
+        level: st.battlePass.level + 1,
+        xp: st.battlePass.xp - xpNeeded
+      };
+      toast(st, `Battle Pass: уровень ${st.battlePass.level}!`, "gem");
+    }
+  }
 
   const b = getBalance();
   if (Math.random() < b.potionChance) { st.hero.potions += 1; pushLog(st, "С врага шлёпнулось зелье"); }
@@ -1275,7 +1379,18 @@ export function newGame(): GameState {
     prestige: { count: 0, essence: 0, bonuses: {}, talents: {} },
     bestiary: { entries: {}, collectionBonus: {}, bonuses: [], maxKills: {}, milestones: [] },
     guildBoss: null,
-    battlePass: { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 },
+    battlePass: { 
+      season: 1, 
+      level: 1, 
+      xp: 0, 
+      premium: false, 
+      seasonEnd: Date.now() + BATTLE_PASS_CONFIG.seasonDurationDays * 24 * 60 * 60 * 1000,
+      weeklyQuests: generateWeeklyQuests(), 
+      claimedFree: [], 
+      claimedPremium: [], 
+      missions: [], 
+      expiresAt: Date.now() + BATTLE_PASS_CONFIG.seasonDurationDays * 24 * 60 * 60 * 1000 
+    },
     pet: { unlocked: false, equipped: null, petId: null, owned: [], pets: {}, canLevelUp: false, level: 1, xp: 0, levelUpCost: 20 },
     tournament: { active: false, tickets: 10, wins: 0, losses: 0, fightsLeft: 5, bestWins: 0, currency: 0, endDate: 0, seasonEndsAt: 0, canClaimReward: false, lastSeasonRank: 0, leaderboard: [] },
     runes: { gear: {}, inventory: [] },
@@ -2127,17 +2242,21 @@ export function reducer(s: GameState, a: Action): GameState {
     case "RUNE_INSERT": {
       const rune = RUNES.find(r => r.id === a.runeId);
       if (!rune) return s;
-      const gearRuneData = s.runes.gear[a.gearUid] || { uid: a.gearUid, runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }] };
+      const existingGearData = s.runes.gear[a.gearUid];
+      const gearRuneData = existingGearData || { uid: a.gearUid, runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }], sockets: 3 };
       if (a.slotIndex < 0 || a.slotIndex >= 3) return s;
       const invRune = s.runes.inventory.find(i => i.runeId === a.runeId);
       if (!invRune || invRune.count <= 0) return s;
+      // Проверяем, есть ли уже руна в этом слоте
+      if (gearRuneData.runes[a.slotIndex].runeId) return s;
       const newRunes = [...gearRuneData.runes];
       newRunes[a.slotIndex] = { runeId: a.runeId, rank: 1 };
+      const activeSockets = newRunes.filter(r => r.runeId !== null).length;
       return {
         ...s,
         runes: {
-          gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
-          inventory: s.runes.inventory.map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i),
+          gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes, sockets: activeSockets } },
+          inventory: s.runes.inventory.filter(i => i.runeId !== a.runeId || i.count > 1).map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i),
         },
       };
     }
@@ -2603,10 +2722,23 @@ export function migrateState(s: GameState): GameState {
     milestones: [...(s.bestiary?.milestones || [])],
   };
   if (!s.guildBoss) s.guildBoss = null;
-  if (!s.battlePass) s.battlePass = { season: 1, level: 1, xp: 0, premium: false, seasonEnd: 0, weeklyQuests: [], claimedFree: [], claimedPremium: [], missions: [], expiresAt: 0 };
+  if (!s.battlePass) s.battlePass = { 
+    season: 1, 
+    level: 1, 
+    xp: 0, 
+    premium: false, 
+    seasonEnd: Date.now() + BATTLE_PASS_CONFIG.seasonDurationDays * 24 * 60 * 60 * 1000,
+    weeklyQuests: generateWeeklyQuests(), 
+    claimedFree: [], 
+    claimedPremium: [], 
+    missions: [], 
+    expiresAt: Date.now() + BATTLE_PASS_CONFIG.seasonDurationDays * 24 * 60 * 60 * 1000 
+  };
   else {
-    if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = 0;
-    if (!Array.isArray(s.battlePass.weeklyQuests)) s.battlePass.weeklyQuests = [];
+    if (!s.battlePass.seasonEnd) s.battlePass.seasonEnd = Date.now() + BATTLE_PASS_CONFIG.seasonDurationDays * 24 * 60 * 60 * 1000;
+    if (!Array.isArray(s.battlePass.weeklyQuests) || s.battlePass.weeklyQuests.length === 0) {
+      s.battlePass.weeklyQuests = generateWeeklyQuests();
+    }
     if (!Array.isArray(s.battlePass.claimedFree)) s.battlePass.claimedFree = [];
     if (!Array.isArray(s.battlePass.claimedPremium)) s.battlePass.claimedPremium = [];
     if (!Array.isArray(s.battlePass.missions)) s.battlePass.missions = [];

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGame } from "../game/useGame";
-import { META, RUN_WAVES, RUN_BOSS_EVERY, SKILLS, CLASSES, ZONES } from "../game/data";
+import { META, RUN_WAVES, RUN_BOSS_EVERY, SKILLS, CLASSES, ZONES, EXPEDITION_TIERS, EXPEDITION_MAX_TIER, expeditionDef, expeditionHpMult, expeditionShardMult, expeditionBloodChance, RESOURCE_ICON } from "../game/data";
 import { fmt, runStats } from "../game/logic";
 import { Icon, Bar, SectionTitle } from "./bits";
 import { MonsterArt, HeroArt } from "./art";
@@ -201,6 +201,13 @@ function StartScreen() {
   const [selectedDepth, setSelectedDepth] = useState(1);
   const hasBlood = s.blood > 0;
   const depth = Math.min(selectedDepth, s.portalDepth);
+  // Этапы Экспедиции: открыты до expeditionDepth, ключ — руна нужного тира.
+  const openTier = Math.min(Math.max(1, s.expeditionDepth ?? 1), EXPEDITION_MAX_TIER);
+  const [selectedTier, setSelectedTier] = useState(openTier);
+  const tier = Math.min(selectedTier, openTier);
+  const tierDef = expeditionDef(tier);
+  const runeKey = s.runes.inventory.find(i => (i.tier ?? 1) >= tier && i.count > 0);
+  const keyOk = tier <= 1 || Boolean(runeKey);
   return (
     <>
       {/* Экспедиция */}
@@ -212,8 +219,9 @@ function StartScreen() {
             <h2 className="font-display text-xl text-fog text-outline">ЭКСПЕДИЦИЯ В БЕЗДНУ</h2>
           </div>
           <p className="text-[12px] text-dim leading-relaxed mb-3">
-            Рогалик-режим: 20 волн, босс каждые 5. После каждого босса герой автоматически получает случайный Дар —
-            собирай билд. Падёшь — забег сгорает, но осколки остаются.
+            Эндгейм-лестница: 20 волн, босс каждые 5. После каждого босса — выбор Дара.
+            С боссов капают ресурсы зоны этапа и опыт питомцу. Этап открывается руной из Мастерской.
+            Падёшь — забег сгорает, но осколки остаются.
           </p>
           <div className="flex gap-3 mb-4">
             <div className="flex-1 bg-abyss/60 border border-line/60 rounded-xl py-2.5 text-center">
@@ -231,10 +239,29 @@ function StartScreen() {
               <div className="text-[9px] text-dim">кровь демона</div>
             </div>
           </div>
-          <button onClick={() => d({ type: "START_RUN", kind: "exp" })} className="btn btn-arc w-full py-3.5 text-[15px]">
-            НАЧАТЬ ЭКСПЕДИЦИЮ
+          <div className="mb-2">
+            <div className="text-[10px] text-dim mb-1.5">Открыт этап: {tierDef.roman} (победа открывает следующий)</div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {EXPEDITION_TIERS.filter(t => t.tier <= openTier).map(t => (
+                <button key={t.tier} onClick={() => setSelectedTier(t.tier)}
+                  className={`rounded-lg border py-1.5 text-[10px] font-display ${tier === t.tier ? "border-arc bg-arc/15 text-arc" : "border-line/60 text-dim"}`}>
+                  ЭТАП {t.roman}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="text-[10px] text-dim mb-3 leading-relaxed">
+            Монстры ×{expeditionHpMult(tier).toFixed(1)} HP · осколки ×{expeditionShardMult(tier).toFixed(1)} · кровь {(expeditionBloodChance(tier) * 100).toFixed(1)}%
+            {tier > 1 && (
+              <span className={keyOk ? "text-arc" : "text-ember"}>
+                {" "}· ключ: руна {tierDef.roman} {runeKey ? `(есть ×${runeKey.count})` : "(нет — скрафти в Мастерской)"}
+              </span>
+            )}
+          </div>
+          <button disabled={tier > 1 && !keyOk} onClick={() => d({ type: "START_RUN", kind: "exp", depth: tier })} className="btn btn-arc w-full py-3.5 text-[15px]">
+            НАЧАТЬ ЭКСПЕДИЦИЮ {tierDef.roman}{tier > 1 ? " (−1 руна)" : ""}
           </button>
-          <p className="text-[10px] text-dim/70 mt-2 text-center">С боссов Экспедиции редко капает Кровь Демона (7%) — ключ к Порталу.</p>
+          <p className="text-[10px] text-dim/70 mt-2 text-center">С боссов этапа капают ресурсы: {(EXPEDITION_TIERS.find(t => t.tier === tier)?.runeCost ?? []).map(m => `${RESOURCE_ICON[m.type]}×${m.amount}`).join(" · ")} — те же реагенты идут на крафт следующей руны.</p>
         </div>
       </div>
 

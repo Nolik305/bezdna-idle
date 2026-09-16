@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { GameProvider, useGame } from "./game/useGame";
 import { fmt, xpNeed } from "./game/logic";
 import { CLASSES, VIP_LEVELS } from "./game/data";
@@ -7,16 +7,6 @@ import { BattleScreen } from "./ui/BattleScreen";
 import { HeroTab, InventoryTab } from "./ui/HeroScreens";
 import { SkillsScreen } from "./ui/SkillsScreen";
 import { MoreScreen } from "./ui/MoreScreen";
-import { PrestigeScreen } from "./ui/PrestigeScreen";
-import { AFKRewardsScreen } from "./ui/AFKRewardsScreen";
-import { BestiaryScreen } from "./ui/BestiaryScreen";
-import { GuildBossScreen } from "./ui/GuildBossScreen";
-import { BattlePassScreen } from "./ui/BattlePassScreen";
-import { PetScreen } from "./ui/PetScreen";
-import { TournamentScreen } from "./ui/TournamentScreen";
-import { RunesScreen } from "./ui/RunesScreen";
-import { BaseScreen } from "./ui/BaseScreen";
-import { SocialScreen } from "./ui/SocialScreen";
 import { BUILD_VERSION, BUILD_DATE } from "./buildInfo";
 import { RunScreen } from "./ui/RunScreen";
 import { DuelScreen } from "./ui/DuelScreen";
@@ -24,6 +14,27 @@ import { PartyScreen } from "./ui/PartyScreen";
 import { Modals } from "./ui/Modals";
 import { ChatPanel } from "./ui/ChatPanel";
 import { useVk, VkProvider } from "./platform/vk";
+
+// Второстепенные экраны грузим по требованию: основной бандл меньше,
+// а редкие разделы (гильдбосс, база, соцсеть…) подгружаются при первом входе.
+const PrestigeScreen = lazy(() => import("./ui/PrestigeScreen").then(m => ({ default: m.PrestigeScreen })));
+const AFKRewardsScreen = lazy(() => import("./ui/AFKRewardsScreen").then(m => ({ default: m.AFKRewardsScreen })));
+const BestiaryScreen = lazy(() => import("./ui/BestiaryScreen").then(m => ({ default: m.BestiaryScreen })));
+const GuildBossScreen = lazy(() => import("./ui/GuildBossScreen").then(m => ({ default: m.GuildBossScreen })));
+const BattlePassScreen = lazy(() => import("./ui/BattlePassScreen").then(m => ({ default: m.BattlePassScreen })));
+const PetScreen = lazy(() => import("./ui/PetScreen").then(m => ({ default: m.PetScreen })));
+const TournamentScreen = lazy(() => import("./ui/TournamentScreen").then(m => ({ default: m.TournamentScreen })));
+const RunesScreen = lazy(() => import("./ui/RunesScreen").then(m => ({ default: m.RunesScreen })));
+const BaseScreen = lazy(() => import("./ui/BaseScreen").then(m => ({ default: m.BaseScreen })));
+const SocialScreen = lazy(() => import("./ui/SocialScreen").then(m => ({ default: m.SocialScreen })));
+
+function ScreenFallback() {
+  return (
+    <div className="panel p-8 text-center">
+      <div className="text-[11px] text-dim">Загрузка…</div>
+    </div>
+  );
+}
 
 type Tab = "battle" | "run" | "duel" | "party" | "hero" | "inv" | "skills" | "more";
 type ActiveScreen = Tab | "prestige" | "afk" | "bestiary" | "guildboss" | "battlepass" | "pet" | "tournament" | "runes" | "base" | "social";
@@ -202,6 +213,7 @@ function Shell() {
         <div className="px-3 pt-2"><HUD /></div>
         <main className="flex-1 overflow-y-auto scroll-slim overscroll-contain px-3 py-3">
           <div key={activeScreen} className="anim-rise">
+            <Suspense fallback={<ScreenFallback />}>
             {activeScreen === "battle" && <BattleScreen />}
             {activeScreen === "run" && <RunScreen />}
             {activeScreen === "duel" && <DuelScreen />}
@@ -220,6 +232,7 @@ function Shell() {
             {activeScreen === "runes" && <RunesScreen />}
             {activeScreen === "base" && <BaseScreen />}
             {activeScreen === "social" && <SocialScreen />}
+            </Suspense>
           </div>
           <div className="h-2" />
         </main>

@@ -1,1 +1,0 @@
-../../../src/game/balanceConfig.ts

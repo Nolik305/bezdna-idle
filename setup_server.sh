@@ -11,45 +11,43 @@ echo "=== Шаг 2: Инициализация схемы ==="
 sudo -u postgres psql abyss_idle < /var/www/game-project/server/schema.sql
 echo "Схема создана!"
 
-echo "=== Шаг 3: Исправление ecosystem.config.cjs ==="
-cat > /var/www/game-project/server/ecosystem.config.cjs << 'ECOF'
+echo "=== Шаг 3: Конфиг PM2 (index.ts под tsx) ==="
+SERVER_DIR="${SERVER_DIR:-/var/www/game-project/server}"
+
+cat > "$SERVER_DIR/ecosystem.config.cjs" << 'ECOF'
 module.exports = {
   apps: [{
     name: "abyss-idle-api",
-    script: "index.mjs",
+    script: "index.ts",
+    interpreter: "tsx",
     cwd: "/var/www/game-project/server",
-    env_file: "/var/www/game-project/server/.env",
     autorestart: true,
     max_memory_restart: "300M",
     time: true,
-    error_file: "/var/www/game-project/server/pm2-err.log",
-    out_file: "/var/www/game-project/server/pm2-out.log",
-    log_file: "/var/www/game-project/server/pm2-combined.log",
+    error_file: "/var/www/game-project/server/logs/err.log",
+    out_file: "/var/www/game-project/server/logs/out.log",
     merge_logs: true,
+    log_date_format: "YYYY-MM-DD HH:mm:ss Z",
   }],
 };
 ECOF
 echo "ecosystem.config.cjs обновлён!"
 
-echo "=== Шаг 4: Обновление .env ==="
-cat > /var/www/game-project/server/.env << 'ENVF'
-PORT=3001
-DATABASE_URL=postgres://game_api:change-me@127.0.0.1:5432/abyss_idle
-VK_APP_ID=54071180
-VK_APP_SECRET=j4uRXmj32NEdCpqnWXkj
-VK_SERVICE_TOKEN=42a692ac42a692ac42a692accd419f9d20442a642a692ac2a0cbac36426b3bd93e0e18d
-CORS_ORIGIN=https://vk.ru
-ADMIN_VK_IDS=835693694
-VITE_API_URL=https://135.106.211.85
-ENVF
-echo ".env обновлён!"
+echo "=== Шаг 4: Проверка .env ==="
+# Секреты НЕ пишем в репозиторий/скрипт — они должны быть заданы заранее
+# (например, в server/.env). Скрипт только проверяет, что они на месте.
+: "${VK_APP_SECRET:?Задайте VK_APP_SECRET в окружении или в server/.env}"
+: "${VK_SERVICE_TOKEN:?Задайте VK_SERVICE_TOKEN в окружении или в server/.env}"
+: "${DATABASE_URL:?Задайте DATABASE_URL в окружении (например, postgresql://game_api:ПАРОЛЬ@127.0.0.1:5432/abyss_idle)}"
+: "${ADMIN_VK_IDS:?Задайте ADMIN_VK_IDS — без него админка недоступна}"
+echo ".env в порядке (секреты берутся из окружения)"
 
 echo "=== Шаг 5: Установка зависимостей ==="
-cd /var/www/game-project/server && npm install
+cd "$SERVER_DIR" && npm install
 
 echo "=== Шаг 6: Перезапуск PM2 ==="
 pm2 delete abyss-idle-api 2>/dev/null || true
-pm2 start /var/www/game-project/server/ecosystem.config.cjs
+pm2 start "$SERVER_DIR/ecosystem.config.cjs"
 pm2 save
 
 echo "=== Шаг 7: Проверка ==="

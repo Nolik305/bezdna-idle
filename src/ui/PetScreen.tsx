@@ -81,12 +81,12 @@ export function PetScreen() {
             <div className="mt-3 grid grid-cols-2 gap-2 w-full">
               {Object.entries(currentPetDef.passiveBonus).map(([stat, value]) => (
                 <div key={stat} className="text-[8px] text-green-200 text-center bg-green-500/5 rounded p-1">
-                  +{(value * (1 + (currentLevel - 1) * 0.1)).toFixed(1)}% {stat === "dmgPct" ? "урон" : stat === "hpPct" ? "HP" : stat === "xpPct" ? "опыт" : stat === "goldPct" ? "золото" : stat === "crit" ? "крит" : stat === "critDmg" ? "крит. урон" : stat}
+                  +{(value * (1 + (currentLevel - 1) * 0.06)).toFixed(1)}% {stat === "dmgPct" ? "урон" : stat === "hpPct" ? "HP" : stat === "xpPct" ? "опыт" : stat === "goldPct" ? "золото" : stat === "crit" ? "крит" : stat === "critDmg" ? "крит. урон" : stat}
                 </div>
               ))}
               {currentPetDef.lifesteal && (
                 <div className="text-[8px] text-red-300 text-center bg-red-500/5 rounded p-1">
-                  +{(currentPetDef.lifesteal * (1 + (currentLevel - 1) * 0.1)).toFixed(1)}% вампиризм
+                                 +{(currentPetDef.lifesteal * (1 + (currentLevel - 1) * 0.04)).toFixed(1)}% вампиризм
                 </div>
               )}
             </div>

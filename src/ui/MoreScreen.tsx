@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useGame } from "../game/useGame";
 import { QUESTS, DAILIES, WEEKLIES, ACHS, SHOP, RARITY, shopCost, VIP_LEVELS, type QuestDef } from "../game/data";
 import { fmt, getMetric, saveGame } from "../game/logic";
@@ -9,16 +9,19 @@ import { AdminPanel } from "./AdminPanel";
 import { CraftSeg } from "./CraftScreen";
 import { EventSeg } from "./EventScreen";
 import { GuildSeg } from "./GuildScreen";
-import { PrestigeScreen } from "./PrestigeScreen";
-import { AFKRewardsScreen } from "./AFKRewardsScreen";
-import { BestiaryScreen } from "./BestiaryScreen";
-import { GuildBossScreen } from "./GuildBossScreen";
-import { BattlePassScreen } from "./BattlePassScreen";
-import { PetScreen } from "./PetScreen";
-import { TournamentScreen } from "./TournamentScreen";
-import { RunesScreen } from "./RunesScreen";
-import { BaseScreen } from "./BaseScreen";
-import { SocialScreen } from "./SocialScreen";
+
+// Тяжёлые разделы грузим по требованию — как и App.tsx, чтобы попадали
+// в общие ленивые чанки, а не в основной бандл.
+const PrestigeScreen = lazy(() => import("./PrestigeScreen").then(m => ({ default: m.PrestigeScreen })));
+const AFKRewardsScreen = lazy(() => import("./AFKRewardsScreen").then(m => ({ default: m.AFKRewardsScreen })));
+const BestiaryScreen = lazy(() => import("./BestiaryScreen").then(m => ({ default: m.BestiaryScreen })));
+const GuildBossScreen = lazy(() => import("./GuildBossScreen").then(m => ({ default: m.GuildBossScreen })));
+const BattlePassScreen = lazy(() => import("./BattlePassScreen").then(m => ({ default: m.BattlePassScreen })));
+const PetScreen = lazy(() => import("./PetScreen").then(m => ({ default: m.PetScreen })));
+const TournamentScreen = lazy(() => import("./TournamentScreen").then(m => ({ default: m.TournamentScreen })));
+const RunesScreen = lazy(() => import("./RunesScreen").then(m => ({ default: m.RunesScreen })));
+const BaseScreen = lazy(() => import("./BaseScreen").then(m => ({ default: m.BaseScreen })));
+const SocialScreen = lazy(() => import("./SocialScreen").then(m => ({ default: m.SocialScreen })));
 
 type Seg = "quests" | "shop" | "ach" | "craft" | "event" | "guild" | "opt" | "admin" | "prestige" | "afk" | "bestiary" | "guildboss" | "battlepass" | "pet" | "tournament" | "runes" | "base" | "social";
 
@@ -385,16 +388,18 @@ export function MoreScreen() {
       {seg === "craft" && <CraftSeg />}
       {seg === "event" && <EventSeg />}
       {seg === "guild" && <GuildSeg />}
-      {seg === "prestige" && <PrestigeScreen />}
-      {seg === "afk" && <AFKRewardsScreen />}
-      {seg === "bestiary" && <BestiaryScreen />}
-      {seg === "guildboss" && <GuildBossScreen />}
-      {seg === "battlepass" && <BattlePassScreen />}
-      {seg === "pet" && <PetScreen />}
-      {seg === "tournament" && <TournamentScreen />}
-      {seg === "runes" && <RunesScreen />}
-      {seg === "base" && <BaseScreen />}
-      {seg === "social" && <SocialScreen />}
+      <Suspense fallback={<div className="panel p-8 text-center text-[11px] text-dim">Загрузка…</div>}>
+        {seg === "prestige" && <PrestigeScreen />}
+        {seg === "afk" && <AFKRewardsScreen />}
+        {seg === "bestiary" && <BestiaryScreen />}
+        {seg === "guildboss" && <GuildBossScreen />}
+        {seg === "battlepass" && <BattlePassScreen />}
+        {seg === "pet" && <PetScreen />}
+        {seg === "tournament" && <TournamentScreen />}
+        {seg === "runes" && <RunesScreen />}
+        {seg === "base" && <BaseScreen />}
+        {seg === "social" && <SocialScreen />}
+      </Suspense>
       {seg === "opt" && <OptSeg />}
       {seg === "admin" && <AdminPanel />}
     </div>

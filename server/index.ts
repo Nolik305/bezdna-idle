@@ -29,6 +29,23 @@ pool.on("error", (err) => console.error("[pool] connection error:", err.message)
 const allowedOrigins = (process.env.CORS_ORIGIN || "").split(",").filter(Boolean).map(s => s.trim());
 const ALLOWED_ORIGINS = allowedOrigins.length > 0 ? allowedOrigins : ["https://vk.ru", "https://nolik305.github.io", "https://135.106.211.85.nip.io"];
 const rateBuckets = new Map();
+// За nginx адрес клиента приходит в X-Forwarded-For/X-Real-IP: если считать по
+// remoteAddress, все игроки делят одну корзину (адрес прокси) и вместе упираются
+// в лимит. TRUST_PROXY=0 отключает доверие заголовкам (например, при прямом
+// доступе к порту без прокси — иначе клиент подделает себе лимит).
+const TRUST_PROXY = (process.env.TRUST_PROXY || "1") !== "0";
+function clientIp(req): string {
+  if (TRUST_PROXY) {
+    const fwd = req.headers["x-forwarded-for"];
+    if (typeof fwd === "string" && fwd.length) {
+      const first = fwd.split(",")[0]?.trim();
+      if (first) return first;
+    }
+    const real = req.headers["x-real-ip"];
+    if (typeof real === "string" && real.trim()) return real.trim();
+  }
+  return req.socket.remoteAddress || "unknown";
+}
 const lastDuelAt = new Map(); // vk_user_id -> timestamp последнего отчёта дуэли (анти-фарм MMR)
 const DUEL_MIN_INTERVAL_MS = 10_000;
 const REWARDED_AD_REWARDS = {
@@ -249,54 +266,8 @@ function gameStateValidationDetail(game: unknown): string {
   return "unknown validation mismatch";
 }
 
-function stateLooksSafe(game: any, previous: any): boolean {
-  if (!previous) return true;
-  const prevHero = previous.hero || {};
-  const prevTotals = previous.totals || {};
-  const hero = game.hero;
-  const totals = game.totals;
-
-  // Базовые проверки: уровень, золото, ресурсы
-  if (hero.level > Number(prevHero.level || 1) + 10) return false;
-  if (hero.gold < 0 || hero.gems < 0 || hero.potions < 0) return false;
-  if ((totals?.kills || 0) < (prevTotals?.kills || 0)) return false;
-  if ((totals?.goldEarned || 0) < (prevTotals?.goldEarned || 0)) return false;
-  if ((totals?.items || 0) < (prevTotals?.items || 0)) return false;
-  if ((totals?.kills || 0) - (prevTotals?.kills || 0) > 10000) return false;
-
-  // Новые системы: проверяем монотонный рост
-  const newFields: (keyof GameState)[] = [
-    "prestige", "bestiary", "battlePass", "pet", "tournament",
-    "runes", "base", "social", "afkRewards",
-  ];
-  for (const key of newFields) {
-    const prev = (previous as Record<string, unknown>)[key];
-    const curr = (game as Record<string, unknown>)[key];
-    // Если предыдущее было undefined, а текущее нет — пропускаем (старый сейв)
-    if (prev === undefined && curr !== undefined) continue;
-    // Если оба есть — проверяем что не откатилось
-    if (prev !== undefined && curr !== undefined && typeof curr === "object") {
-      // Ленивая проверка: просто сравниваем JSON-представление (для сложных объектов)
-      // Строгая проверка будет слишком медленной для всех полей
-      const prevStr = JSON.stringify(prev);
-      const currStr = JSON.stringify(curr);
-      if (currStr.length > 0 && prevStr.length > currStr.length * 2) {
-        // Объект может быть легитимно меньше (например, после claim награды)
-        // Пропускаем строгую проверку для сложных полей
-      }
-    }
-  }
-
-  // Проверяем что герой не телепортируется слишком далеко по зоне
-  if (game.zones !== undefined && prevHero.zones !== undefined) {
-    if (game.zones > prevHero.zones + 2) return false;
-  }
-
-  return true;
-}
-
 function json(res, status, payload) {
-  const requestOrigin = res._corsOrigin;
+  const requestOrigin = (res as any)._corsOrigin;
   let allowOrigin;
   if (requestOrigin && (ALLOWED_ORIGINS.includes("*") || ALLOWED_ORIGINS.includes(requestOrigin))) {
     allowOrigin = requestOrigin;
@@ -317,7 +288,7 @@ function json(res, status, payload) {
 // до 512КБ). Раньше readBody резал на 64КБ, из-за чего заявленный лимит сейва был
 // недостижим и крупные сейвы падали с ошибкой.
 const MAX_BODY = 640 * 1024;
-function readBody(req) {
+function readBody(req): Promise<any> {
   return new Promise((resolve, reject) => {
     let body = "";
     let tooLarge = false;
@@ -327,7 +298,7 @@ function readBody(req) {
       if (body.length > MAX_BODY) {
         tooLarge = true;
         body = "";
-        const err = new Error("payload too large");
+        const err = new Error("payload too large") as Error & { status: number };
         err.status = 413;
         cleanup();
         reject(err);
@@ -337,7 +308,7 @@ function readBody(req) {
     };
     const onEnd = () => {
       try { resolve(body ? JSON.parse(body) : {}); }
-      catch { const e = new Error("invalid json"); e.status = 400; cleanup(); reject(e); }
+      catch { const e = new Error("invalid json") as Error & { status: number }; e.status = 400; cleanup(); reject(e); }
     };
     const onError = (e) => { cleanup(); reject(e); };
     const cleanup = () => {
@@ -439,10 +410,10 @@ async function chatBanUntil(pool, userId) {
 }
 
 const server = http.createServer(async (req, res) => {
-  res._corsOrigin = req.headers.origin;
+  (res as any)._corsOrigin = req.headers.origin;
   if (req.method === "OPTIONS") return json(res, 204, {});
   if (req.method === "GET" && req.url === "/health") return json(res, 200, { ok: true });
-  if (req.url?.startsWith("/api/") && !allowedRequest(req.socket.remoteAddress || "unknown")) {
+  if (req.url?.startsWith("/api/") && !allowedRequest(clientIp(req))) {
     return json(res, 429, { error: "rate_limited" });
   }
 
@@ -532,7 +503,9 @@ const server = http.createServer(async (req, res) => {
         [id]
       );
       if (!currentState.rowCount) return json(res, 404, { error: "player_not_found" });
-      if (!stateLooksSafe(game, currentState.rows[0].game) && !explicitReset) {
+      // Явный сброс (meta.cloudReset) обходит проверку — новый сейв по определению
+      // «откатывает» уровень и счётчики.
+      if (!isProgressSafe(game, currentState.rows[0].game) && !explicitReset) {
         return json(res, 400, { error: "invalid_progress_delta" });
       }
       if (incomingEmpty && !explicitReset) {

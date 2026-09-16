@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: "game-api",
+    name: "abyss-idle-api",
     script: "index.ts",
     interpreter: "tsx",
     cwd: "/var/www/game-project/server",

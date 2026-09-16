@@ -56,16 +56,16 @@ export const DEFAULT_BALANCE: BalanceConfig = {
   // одной зоны имеют одинаковый ilvl независимо от достигнутой волны.
   ilvlWaveAdd: 0.5,
   ilvlBossBonus: 4,
-  // Сглаженная кривая врагов: экспонента снижена (1.17->1.09 HP, 1.135->1.07 урон),
-  // множитель босса смягчён (7->4 HP, 1.8->1.5 урон), чтобы шмот (линейный по ilvl) поспевал.
-  enemyHpBase: 26,
-  enemyHpPerZone: 14,
-  enemyHpPow: 1.09,
+  // Сглаженная кривая врагов: экспонента снижена (1.17->1.085 HP, 1.135->1.065 урон),
+  // множитель босса смягчён (7->3.2 HP, 1.8->1.4 урон), чтобы шмот (линейный по ilvl) поспевал.
+  enemyHpBase: 24,
+  enemyHpPerZone: 12,
+  enemyHpPow: 1.085,
   enemyDmgBase: 5,
   enemyDmgPerZone: 3.2,
-  enemyDmgPow: 1.07,
-  bossHpMult: 4,
-  bossDmgMult: 1.5,
+  enemyDmgPow: 1.065,
+  bossHpMult: 3.2,
+  bossDmgMult: 1.4,
 };
 
 // Дефолтная база статов (дублирует прежние формулы).

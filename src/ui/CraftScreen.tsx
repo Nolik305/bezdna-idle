@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGame } from "../game/useGame";
-import { RESOURCES, RESOURCE_ICON, CRAFT_RECIPES, ZONE_RESOURCES, RARITY, SLOT_INFO, type CraftRecipe } from "../game/data";
+import { RESOURCES, RESOURCE_ICON, CRAFT_RECIPES, EXPEDITION_RUNE_RECIPES, ZONE_RESOURCES, RARITY, SLOT_INFO, type CraftRecipe } from "../game/data";
 import { fmt, SLOTS } from "../game/logic";
 import { Icon, SectionTitle } from "./bits";
 import { slotItemSprite } from "../game/sprites";
@@ -121,6 +121,14 @@ export function CraftSeg() {
         <SectionTitle icon="gear" right={<span className="text-[10px] text-dim">крафт из ресурсов</span>}>МАСТЕРСКАЯ</SectionTitle>
         <div className="flex flex-col gap-2">
           {CRAFT_RECIPES.map(r => <RecipeCard key={r.id} r={r} />)}
+        </div>
+      </div>
+
+      <div className="panel p-3">
+        <SectionTitle icon="spark" right={<span className="text-[10px] text-dim">ключи к этапам</span>}>РУНЫ ЭКСПЕДИЦИИ</SectionTitle>
+        <p className="text-[10px] text-dim mb-2.5">Руна тира T открывает этап T и усиливает статы рун в шмоте. Расходуется на входе в этап II и выше.</p>
+        <div className="flex flex-col gap-2">
+          {EXPEDITION_RUNE_RECIPES.map(r => <RecipeCard key={r.id} r={r} />)}
         </div>
       </div>
     </div>

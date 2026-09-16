@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useGame } from "../game/useGame";
-import { CLASSES, EVENTS, LOGIN_REWARDS } from "../game/data";
+import { CLASSES, EVENTS, LOGIN_REWARDS, RELICS } from "../game/data";
+import type { RelicDef } from "../game/data";
 import { fmtTime } from "../game/logic";
 import { fmt } from "../game/logic";
 import { Icon } from "./bits";
@@ -228,6 +229,60 @@ function ActivityModal() {
   );
 }
 
+function RunPickModal({ options }: { options: string[] }) {
+  const { s, d } = useGame();
+  const relics = options
+    .map(id => RELICS.find(r => r.id === id))
+    .filter((def): def is RelicDef => Boolean(def));
+  if (!relics.length) {
+    // Нечего предлагать (например, сейв со старой модалкой) — просто закрываем,
+    // не прерывая забег: RUN_CLOSE сбросил бы весь поход.
+    return (
+      <Shell>
+        <div className="text-center">
+          <h2 className="font-display text-xl text-fog mb-2">ДАРЫ ИСЧЕРПАНЫ</h2>
+          <p className="text-[11px] text-dim mb-4">Все дары уже на максимуме — забег продолжается.</p>
+          <button onClick={() => d({ type: "CLOSE_MODAL" })} className="btn btn-gold w-full py-3 text-[14px]">ПРОДОЛЖИТЬ</button>
+        </div>
+      </Shell>
+    );
+  }
+  return (
+    <Shell>
+      <div className="text-center mb-4">
+        <div className="font-display text-[10px] tracking-[0.25em] text-mana mb-1">БОСС ПАЛ</div>
+        <h2 className="font-display text-2xl text-fog text-outline">ВЫБЕРИ ДАР БЕЗДНЫ</h2>
+        <p className="text-dim text-[11px] mt-1">Бой на паузе. Выбор действует до конца забега.</p>
+      </div>
+      <div className="flex flex-col gap-2.5">
+        {relics.map(def => {
+          const rank = s.run.relics[def.id] || 0;
+          const maxed = rank >= def.max;
+          return (
+            <button
+              key={def.id}
+              disabled={maxed}
+              onClick={() => d({ type: "RUN_PICK", id: def.id })}
+              className={`panel p-3 flex items-center gap-3 text-left transition-all ${maxed ? "opacity-50" : "hover:-translate-y-0.5"}`}
+            >
+              <div className="w-11 h-11 shrink-0 rounded-lg grid place-items-center border border-mana/40 bg-mana/10 text-mana">
+                <Icon n={def.icon} className="w-6 h-6" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-display text-[13px] text-fog flex items-center gap-2">
+                  {def.name}
+                  <span className="text-[9px] text-mana font-body">ур. {rank}/{def.max}</span>
+                </div>
+                <div className="text-[10px] text-dim">{maxed ? "максимум" : def.desc(rank + 1)}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </Shell>
+  );
+}
+
 export function Modals() {
   const { s } = useGame();
   const m = s.modal;
@@ -237,5 +292,6 @@ export function Modals() {
   if (m.t === "event") return <EventModal id={m.id} />;
   if (m.t === "levelup") return <LevelUpModal level={m.level} />;
   if (m.t === "activity") return <ActivityModal />;
+  if (m.t === "runpick") return <RunPickModal options={m.options} />;
   return null;
 }

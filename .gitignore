@@ -1,4 +1,34 @@
-```
-# Build artifacts
+# Зависимости и сборка
+node_modules/
 dist/
-```
+build/
+*.tsbuildinfo
+
+# Логи и временные файлы
+*.log
+logs/
+tmp/
+.cache/
+.vite/
+
+# Секреты и локальное окружение
+.env
+.env.*
+!.env.example
+server/.env
+server/.env.*
+!server/.env.example
+
+# Godot-метаданные (проект на React, файлы Godot не нужны)
+*.import
+project.godot
+
+# Архивы, бинарники, локальные артефакты
+*.tar.gz
+*.deb
+
+# Чужой код/бэкапы (в проекте только src + server + shared)
+game-fixes/
+server-backup/
+addons/ziva_agent/
+

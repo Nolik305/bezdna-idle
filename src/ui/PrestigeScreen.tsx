@@ -1,7 +1,7 @@
 import { useGame } from "../game/useGame";
 import { Icon } from "./bits";
 import { fmt } from "../game/logic";
-import { PRESTIGE_BONUSES, PRESTIGE_TALENTS } from "../game/data";
+import { PRESTIGE_BONUSES, PRESTIGE_CONFIG, PRESTIGE_TALENTS } from "../game/data";
 
 export function PrestigeScreen() {
   const { s, d } = useGame();
@@ -18,7 +18,13 @@ export function PrestigeScreen() {
     );
   }
   const totalBonus = Object.entries(prestige.bonuses).reduce((sum, [_, v]) => sum + v, 0);
-  const essenceGain = Math.floor(s.totals.kills / 1000) + (s.zones * 10);
+  // Формула совпадает с серверной (PRESTIGE_DO): эссенция за зону,
+  // с талантом «Собиратель сущности» и базовым бонусом престижа.
+  const essenceTalent = prestige.talents?.essence_boost || 0;
+  const prestigeBase = prestige.count * PRESTIGE_CONFIG.baseBonusPct / 100;
+  const essenceGain = s.battle.zone >= PRESTIGE_CONFIG.minZone
+        ? Math.floor(s.battle.zone * PRESTIGE_CONFIG.essencePerZone * (1 + essenceTalent * 0.02) * (1 + prestigeBase))
+    : 0;
   const canPrestige = essenceGain > 0;
 
   return (

@@ -40,7 +40,7 @@
 
 ### Фаза 2: База данных ✅
 - [x] БД `abyss_idle` создана
-- [x] Пользователь `game_api` (пароль `8pjFk1JUULBk`)
+- [x] Пользователь `game_api` (пароль `<ПАРОЛЬ-БД>`)
 - [x] 10 таблиц из `schema.sql`
 - [x] Индексы
 - [x] `game_config` инициализирован
@@ -101,7 +101,7 @@ tail -f /var/log/nginx/error.log
 
 ### PostgreSQL
 ```bash
-PGPASSWORD=8pjFk1JUULBk psql -h 127.0.0.1 -U game_api -d abyss_idle
+PGPASSWORD=<ПАРОЛЬ-БД> psql -h 127.0.0.1 -U game_api -d abyss_idle
 \dt                         # таблицы
 SELECT count(*) FROM players;
 ```
@@ -145,7 +145,7 @@ pm2 restart game-api
   ```bash
   #!/bin/bash
   DATE=$(date +%Y%m%d)
-  PGPASSWORD=8pjFk1JUULBk pg_dump -h 127.0.0.1 -U game_api abyss_idle | gzip > /backups/abyss_$DATE.sql.gz
+  PGPASSWORD=<ПАРОЛЬ-БД> pg_dump -h 127.0.0.1 -U game_api abyss_idle | gzip > /backups/abyss_$DATE.sql.gz
   find /backups -name "*.sql.gz" -mtime +30 -delete
   ```
 - [ ] **Мониторинг** — uptime-проверка `/health`
@@ -166,8 +166,8 @@ pm2 restart game-api
 | VDS IP | `135.106.211.85` | Select VDS |
 | VDS пароль root | (в чате) | — |
 | VK App ID | `54071180` | `.env` |
-| VK App Secret | `j4uRXmj32NEdCpqnWXkj` | `.env` |
-| БД | `abyss_idle` / `game_api` / `8pjFk1JUULBk` | `.env` |
+| VK App Secret | `<VK-APP-SECRET>` | `.env` |
+| БД | `abyss_idle` / `game_api` / `<ПАРОЛЬ-БД>` | `.env` |
 | Admin VK ID | `835693694` | `.env` |
 | GitHub | `nolik305/bezdna-idle` | — |
 

@@ -9,7 +9,19 @@ PG_HOST="127.0.0.1"
 PG_PORT="5432"
 PG_DB="abyss_idle"
 PG_USER="game_api"
-PG_PASS="${PGPASSWORD:-}"
+
+# Пароль берём из server/.env (DATABASE_URL), а не хардкодим.
+# .env лежит рядом со скриптом: /var/www/game-project/server/.env
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -z "${PGPASSWORD:-}" ] && [ -f "$SCRIPT_DIR/.env" ]; then
+  # shellcheck disable=SC1091
+  PGPASSWORD=$(sed -n 's/^DATABASE_URL=.*:\/\/[^:]*:\([^@]*\)@.*/\1/p' "$SCRIPT_DIR/.env" | head -n 1)
+  export PGPASSWORD
+fi
+if [ -z "${PGPASSWORD:-}" ]; then
+  echo "[$(date)] ERROR: PGPASSWORD не задан и не найден в $SCRIPT_DIR/.env" >&2
+  exit 1
+fi
 
 # Создаём директорию если нет
 mkdir -p "$BACKUP_DIR"
@@ -20,7 +32,7 @@ BACKUP_FILE="$BACKUP_DIR/abyss_${DATE}.sql.gz"
 
 # Делаем дамп и сжимаем
 echo "[$(date)] Starting backup..."
-PGPASSWORD="$PG_PASS" pg_dump \
+PGPASSWORD="$PGPASSWORD" pg_dump \
   -h "$PG_HOST" \
   -p "$PG_PORT" \
   -U "$PG_USER" \

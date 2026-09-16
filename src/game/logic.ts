@@ -8,21 +8,28 @@ import {
   ASCENDANCIES, ATLAS_NODES, PATH_LEVEL_CAP, pathXpNeed,
   DUNGEONS, PARTY_TICKETS_DAILY, PARTY_TIME, MATE_NAMES,
   LOGIN_REWARDS,
-  RESOURCES, ZONE_RESOURCES, CRAFT_RECIPES,
+  RESOURCES, RESOURCE_ICON, ZONE_RESOURCES, CRAFT_RECIPES, EXPEDITION_RUNE_RECIPES,
+  EXPEDITION_MAX_TIER, EXPEDITION_TIERS, expeditionDef, expeditionHpMult, expeditionDmgMult,
+  expeditionGoldMult, expeditionXpMult, expeditionShardMult, expeditionBloodChance,
+  expeditionPetXp, RUNE_TIER_STAT_MULT, rollSockets, GEAR_SOCKET_SLOTS,
   activeSeasonalEvent, type SeasonalEventDef,
   type SetDef,
   // === НОВЫЕ ИМПОРТЫ ===
   PRESTIGE_CONFIG, PRESTIGE_BONUSES, PRESTIGE_TALENTS,
   BESTIARY_BONUSES,
   BATTLE_PASS_CONFIG, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM,
-  PETS,
+  PETS, petPowerMult, PET_LEVEL_CAP, PET_STAR_CAP, petStarCost,
   RUNES, RUNE_SETS,
   BASE_BUILDINGS,
   TOURNAMENT_CONFIG, TOURNAMENT_REWARDS,
+  GUILD_BOSSES, GUILD_BOSS_CONFIG,
 } from "./data";
 import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, GuildBossS, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
 import { getCustomSets, getCustomItems, rollCustomItem, getCustomItemById, getCustomSetById } from "./customContent";
 import { autoIlvl, getBalance, getDropPools, statValue, statRoll } from "./balanceConfig";
+
+// genItem живёт в data.ts (там же rollSockets/rarityMult) — реэкспорт для тестов/UI.
+export { genItem } from "./data";
 
 // Генерирует ключ localStorage на основе VK ID пользователя.
 // Без VK ID (офлайн) используется базовый ключ.
@@ -101,16 +108,19 @@ export function getStats(s: GameState): Stats {
     }
   }
   const P = (id: string) => s.passives[id] || 0;
-  dmgPct += 8 * P("power") + 5 * P("arcane_power");
-  crit += 2.5 * P("focus") + 2 * P("marksmanship");
-  hpPct += 8 * P("vitality") + 4 * P("arcane_barrier");
-  armor += 6 * P("skin");
-  goldPct += 8 * P("greed") + 4 * P("hunter");
-  xpPct += 7 * P("wisdom") + 5 * P("mana_surge");
-  luck += 5 * P("fortune"); offlinePct += 12 * P("treasury");
-  asPct += 3 * P("rapid_fire");
-  dotPct += 0.06 * P("venomcraft");
-  cooldownPct += 2 * P("spell_focus");
+  // Пассивки: значения согласованы с desc в PASSIVES (data.ts). Держим потолок:
+  // золото/опыт ≤3% за ранг, скорость атаки ≤2.5%, иначе экспонента урона/фарма
+  // ломает весь остальной баланс (боссы, забеги, крафт).
+  dmgPct += 2 * P("power") + 2 * P("arcane_power");
+crit += 1 * P("focus") + 1.2 * P("marksmanship");
+hpPct += 2 * P("vitality") + 2 * P("arcane_barrier");
+armor += 1.5 * P("skin");
+goldPct += 2 * P("greed") + 2 * P("hunter");
+xpPct += 2 * P("wisdom") + 2 * P("mana_surge");
+luck += 1.5 * P("fortune"); offlinePct += 2 * P("treasury");
+asPct += 2 * P("rapid_fire");
+dotPct += 0.04 * P("venomcraft");
+cooldownPct += 1.2 * P("spell_focus");
 
   // VIP-привилегии (кумулятивные)
   if (s.vip > 0) {
@@ -128,12 +138,14 @@ export function getStats(s: GameState): Stats {
     luck += 2 * abyssWorn;
   }
 
-  // Камень Бога: бесконечная шкала, усиливает ВСЁ
+  // Камень Бога: бесконечная шкала, но с притуплением — иначе один слот
+  // перевешивает все остальные системы (заточку, сеты, руны, питомцев).
   if (s.godstone != null && s.godstone > 0) {
     const L = s.godstone;
-    dmgPct += 6 * L; hpPct += 6 * L; goldPct += 4 * L; xpPct += 4 * L;
-    crit += 1.2 * L; asPct += 1.5 * L; luck += 2 * L; armor += 3 * L;
-    critDmg += 3 * L; regen += 0.3 * L; offlinePct += 2 * L;
+    const dim = 1 / (1 + 0.15 * (L - 1)); // +15% затухания за уровень
+    dmgPct += 6 * L * dim; hpPct += 6 * L * dim; goldPct += 4 * L * dim; xpPct += 4 * L * dim;
+    crit += 1.2 * L * dim; asPct += 1.5 * L * dim; luck += 2 * L * dim; armor += 3 * L * dim;
+    critDmg += 3 * L * dim; regen += 0.3 * L * dim; offlinePct += 2 * L * dim;
   }
 
   // Сеты Атласа: бонусы за количество надетых вещей одного сета
@@ -232,6 +244,10 @@ export function getStats(s: GameState): Stats {
       case "critDmg": critDmg += bonusDef.valuePerLevel * rank; break;
     }
   }
+  // Таланты престижа: «Удача избранного» и «Охотник на боссов» реально работают.
+  const prestigeTalents = s.prestige?.talents || {};
+  if (prestigeTalents.luck_prestige) luck += prestigeTalents.luck_prestige * 1;
+  // Бонус по боссам применяется в точках урона по боссу (killEnemy/boss, runKill, дуэли не трогаем).
 
   // Бонусы бестиария
   for (const [statKey, value] of Object.entries(s.bestiary.collectionBonus || {})) {
@@ -246,13 +262,13 @@ export function getStats(s: GameState): Stats {
     }
   }
 
-  // Бонусы питомцев
+  // Бонусы питомцев: база + уровень ×2.5% (кап ×1.5 на 20) + звёзды ×25% (макс ⭐5).
+  // Было +4-10%/уровень без капа: дракон на 30 уровне давал +6%×2.2 — жирнее сета.
   if (s.pet.unlocked && s.pet.equipped) {
     const petDef = PETS.find(p => p.id === s.pet.equipped);
     if (petDef) {
       const petData = s.pet.pets[s.pet.equipped];
-      const petLevel = petData?.level || 1;
-      const levelMult = 1 + (petLevel - 1) * 0.1; // +10% за каждый уровень
+      const levelMult = petPowerMult(petData?.level || 1, petData?.stars || 0);
       for (const [statKey, baseValue] of Object.entries(petDef.passiveBonus || {})) {
         const value = (baseValue || 0) * levelMult;
         switch (statKey) {
@@ -268,6 +284,73 @@ export function getStats(s: GameState): Stats {
       }
       if (petDef.lifesteal) lifesteal += petDef.lifesteal * levelMult;
       if (petDef.dodge) dodge += petDef.dodge * levelMult;
+    }
+  }
+
+  // === РУНЫ (только гнёзда предмета: gear.runes[i] активно при i < sockets) ===
+  if (s.runes && s.runes.gear) {
+    const wornRunes: string[] = [];
+    // Синка гнёзд: сокеты живут на предмете (sockets), в gear.runes храним
+    // только сами руны. Лимитим по актуальному числу гнёзд предмета, а не по
+    // устаревшему gear.sockets — иначе снятый/сверлёный предмет врёт в статах.
+    const socketsOfItem = (uid: number): number => {
+      const fromInv = s.inv.find(i => i.uid === uid)?.sockets;
+      if (fromInv != null) return fromInv;
+      for (const slot of SLOTS) { const eq = s.equip[slot]; if (eq?.uid === uid) return eq.sockets ?? 0; }
+      return 0;
+    };
+    for (const [uidStr, gear] of Object.entries(s.runes.gear)) {
+      if (!gear) continue;
+      const uid = Number(uidStr);
+      const sockets = socketsOfItem(uid);
+      for (let i = 0; i < gear.runes.length && i < sockets; i++) {
+        const slot = gear.runes[i];
+        if (slot.runeId) {
+          const runeDef = RUNES.find(r => r.id === slot.runeId);
+          if (runeDef) {
+            wornRunes.push(runeDef.id);
+            // Руны экспедиции тира T сильнее обычных (T=1 → множитель 1).
+            const tierMult = RUNE_TIER_STAT_MULT(slot.rank || 1);
+            for (const [k, v] of Object.entries(runeDef.stats)) {
+              const val = (v ?? 0) * tierMult;
+              switch (k) {
+                case "dmg": flatDmg += val; break;
+                case "dmgPct": dmgPct += val; break;
+                case "hp": flatHp += val; break;
+                case "hpPct": hpPct += val; break;
+                case "armor": armor += val; break;
+                case "crit": crit += val; break;
+                case "critDmg": critDmg += val; break;
+                case "as": asPct += val; break;
+                case "goldPct": goldPct += val; break;
+                case "xpPct": xpPct += val; break;
+                case "luck": luck += val; break;
+                case "regen": regen += val; break;
+              }
+            }
+          }
+        }
+      }
+    }
+    for (const set of RUNE_SETS) {
+      const wornCount = set.runes.filter(r => wornRunes.includes(r)).length;
+      if (wornCount >= 2) {
+        for (const [k, v] of Object.entries(set.bonus)) {
+          const val = v ?? 0;
+          switch (k) {
+            case "dmgPct": dmgPct += val; break;
+            case "hpPct": hpPct += val; break;
+            case "crit": crit += val; break;
+            case "critDmg": critDmg += val; break;
+            case "as": asPct += val; break;
+            case "goldPct": goldPct += val; break;
+            case "xpPct": xpPct += val; break;
+            case "armor": armor += val; break;
+            case "regen": regen += val; break;
+            case "dotPct": dotPct += val; break;
+          }
+        }
+      }
     }
   }
 
@@ -334,7 +417,7 @@ export function itemPower(it: Item, slotLevel = 0): number {
     const w = ITEM_STAT_WEIGHT[k as StatKey] ?? 0.5;
     p += (v ?? 0) * slotMult * w;
   }
-  return Math.round(p);
+  return Math.round(p * (it.rarity === 5 ? 1.15 : 1));
 }
 
 // Разница силы между предметом it и тем, что надето в его слоте (учитывая заточку
@@ -395,13 +478,13 @@ export function findSetDef(setId: string): SetDef | undefined {
   return SETS.find(x => x.id === setId) ?? getCustomSetById(setId) ?? undefined;
 }
 
-/** генерация сетовой вещи (сеты Атласа) */
+/** генерация сетовой вещи (сеты Атласа). Топ-тир: 4 строки статов + до 2 гнёзд (атлас ≥ сету по силе). */
 export function genSetItem(setId: string, ilvl: number, classId: ClassId, uid: number): Item {
   const def = findSetDef(setId) ?? SETS[0];
   const base = def.pieces[Math.floor(Math.random() * def.pieces.length)];
   const pool = [...def.bias];
   const stats: Partial<Record<StatKey, number>> = {};
-  const nStats = 3;
+  const nStats = Math.min(4, def.bias.length);
   for (let i = 0; i < nStats && pool.length; i++) {
     const idx = Math.floor(Math.random() * pool.length);
     const key = pool.splice(idx, 1)[0];
@@ -411,7 +494,8 @@ export function genSetItem(setId: string, ilvl: number, classId: ClassId, uid: n
   }
   const name = `${def.name}: ${SET_PIECE_NAMES[base]}`;
   const sell = Math.round(60 + ilvl * 3);
-  return { uid, base, name, rarity: 4, ilvl, stats, sell, set: def.id };
+  const sockets = rollSockets(4);
+  return { uid, base, name, rarity: 4, ilvl, stats, sell, set: def.id, ...(sockets > 0 ? { sockets } : {}) };
 }
 
 const baseStat = (k: StatKey, ilvl: number): number => {
@@ -610,12 +694,16 @@ function partyTick(s: GameState, dt: number): GameState {
 }
 
 /* =============== РОГАЛИК: экспедиция и Портал Бездны =============== */
+// Экспедиция — эндгейм-лестница: этап I..VIII, глубина выбирается руной.
+// Сила и награда растут с тиром (см. expedition*Mult в data.ts), босс каждого
+// 5-го этапа отдаёт выбор дара, ресурсы своей зоны и XP экипированному питомцу.
 export const newRun = (kind: "exp" | "portal" = "exp", depth = 1): RunS => ({
   active: false, kind, depth, wave: 1, enemy: null, heroT: 0, enemyT: 0, skillT: 4, dotDps: 0, dotT: 0, hp: 0, maxHp: 0,
   cds: {}, relics: {}, bosses: 0, goldEarned: 0,
 });
 
 export function spawnRunEnemy(wave: number, kind: "exp" | "portal" = "exp", depth = 1): Enemy {
+  const expTier = kind === "exp" ? Math.min(Math.max(1, depth), EXPEDITION_MAX_TIER) : 1;
   const tier = kind === "portal"
     ? ZONES.length - 1 // Портал сразу кидает в тварей Бездны
     : Math.min(Math.floor((wave - 1) / RUN_BOSS_EVERY), ZONES.length - 2);
@@ -624,22 +712,30 @@ export function spawnRunEnemy(wave: number, kind: "exp" | "portal" = "exp", dept
   const key = boss ? z.boss : z.mobs[Math.floor(Math.random() * z.mobs.length)];
   const hpK = kind === "portal" ? 1.42 : 1.33;
   const dmgK = kind === "portal" ? 1.3 : 1.24;
+  // Этапы Экспедиции: каждый тир ~×1.85 HP и ×1.5 урона поверх базовой кривой.
+  const expHp = kind === "exp" ? expeditionHpMult(expTier) : 1;
+  const expDmg = kind === "exp" ? expeditionDmgMult(expTier) : 1;
   // глубины Портала: Бездна I, II, III… каждая заметно злее
   const depthHp = kind === "portal" ? Math.pow(2.1, depth - 1) : 1;
   const depthDmg = kind === "portal" ? Math.pow(1.68, depth - 1) : 1;
-  const hp = 60 * Math.pow(hpK, wave) * (boss ? 5 : 1) * depthHp;
-  const dmg = 8 * Math.pow(dmgK, wave) * (boss ? 1.6 : 1) * depthDmg;
-  const gold = Math.round((10 + wave * 3) * (boss ? 8 : 1) * (0.9 + Math.random() * 0.2) * (kind === "portal" ? 1.6 * depth : 1));
+  const hp = 60 * Math.pow(hpK, wave) * (boss ? 5 : 1) * depthHp * expHp;
+  const dmg = 8 * Math.pow(dmgK, wave) * (boss ? 1.6 : 1) * depthDmg * expDmg;
+  const expGold = kind === "exp" ? expeditionGoldMult(expTier) : 1;
+  const gold = Math.round((10 + wave * 3) * (boss ? 8 : 1) * (0.9 + Math.random() * 0.2) * (kind === "portal" ? 1.6 * depth : expGold));
   const r = Math.round(hp);
   return { key, name: MOBS[key]?.n ?? key, hp: r, maxHp: r, dmg, as: boss ? 0.55 : 0.9, boss, gold, xp: 0 };
 }
 
-/** предмет Сета Бездны (фиксированные мощные статы, редкость «Бездна») */
+/** предмет Сета Бездны (редкость «Бездна», кап: ilvl-шкала ×4.4 + рост от волны + до 3 гнёзд) */
 export function genAbyssItem(ilvl: number, uid: number, classId: ClassId, wave: number): Item {
   const bases = Object.keys(ABYSS_SET) as BaseSlot[];
   const base = bases[Math.floor(Math.random() * bases.length)];
   const def = ABYSS_SET[base]!;
-  const scale = 1 + wave * 0.05;
+  // Кап: фикс-база таблицы ABYSS_SET × (4.4/3.2) поверх легенды + рост от волны
+  // (+6%/волна) + волновая «подушка» под высокий ilvl: ilvl-лут растёт статами
+  // быстрее фикс-таблицы, поэтому добавляем ×(1+ilvl/80) — при равном ilvl
+  // Бездна всегда сильнее легенды, но без убегания в космос на низких волнах.
+  const scale = RARITY[5].mult / RARITY[4].mult * (1 + wave * 0.06) * (1 + ilvl / 80);
   const stats: Partial<Record<StatKey, number>> = {};
   for (const [k, v] of Object.entries(def.stats)) {
     let val = (v ?? 0) * scale;
@@ -649,7 +745,8 @@ export function genAbyssItem(ilvl: number, uid: number, classId: ClassId, wave: 
   const name = base === "weapon"
     ? (classId === "mage" ? "Жезл Пожирателя" : "Лук Пустоты")
     : def.name;
-  return { uid, base, name, rarity: 5, ilvl, stats, sell: 400 + ilvl * 6, abyss: true };
+  const sockets = rollSockets(5);
+  return { uid, base, name, rarity: 5, ilvl, stats, sell: 400 + ilvl * 6, abyss: true, ...(sockets > 0 ? { sockets } : {}) };
 }
 
 /* =============== ДУЭЛИ =============== */
@@ -876,6 +973,7 @@ function runHeroHit(st: GameState, mult: number) {
   const rs = runStats(st);
   const isCrit = Math.random() * 100 < rs.crit;
   let dmg = rs.dmg * mult * (0.9 + Math.random() * 0.2);
+  if (e.boss) dmg *= bossHunterMult(st);
   if (isCrit) dmg *= rs.critDmg / 100;
   const d = Math.max(1, Math.round(dmg));
   st.run.enemy = { ...e, hp: e.hp - d };
@@ -932,10 +1030,29 @@ function runKill(st: GameState) {
       giveItem(genItem(ilvl, 2, st.hero.classId, rs.luck, st.uidSeq));
     }
   } else {
-    // Экспедиция: с боссов очень редко капает Кровь Демона
-    if (wasBoss && Math.random() < 0.07) {
-      st.blood += 1;
-      toast(st, "КРОВЬ ДЕМОНА! Ключ к Порталу Бездны", "gem");
+    // Экспедиция: с боссов капают ресурсы зоны этапа (по её индексу), растёт
+    // шанс Крови Демона, а экипированный питомец получает опыт забега.
+    if (wasBoss) {
+      const tier = Math.min(Math.max(1, st.run.depth), EXPEDITION_MAX_TIER);
+      const def = expeditionDef(tier);
+      const zoneRes = ZONE_RESOURCES[def.resourceZone] ?? [];
+      for (let i = 0; i < 2 + Math.min(2, tier >> 1); i++) {
+        const key = zoneRes[Math.floor(Math.random() * zoneRes.length)];
+        if (!key) break;
+        const amt = 2 + Math.floor(Math.random() * (2 + tier));
+        st.resources[key] = (st.resources[key] || 0) + amt;
+        st.daily.resources += amt;
+        st.weekly.resources += amt;
+      }
+      if (Math.random() < expeditionBloodChance(tier)) {
+        st.blood += 1;
+        toast(st, "КРОВЬ ДЕМОНА! Ключ к Порталу Бездны", "gem");
+      }
+      const equipped = st.pet?.equipped;
+      if (equipped && st.pet.pets[equipped]) {
+        const petData = st.pet.pets[equipped];
+        st.pet = { ...st.pet, pets: { ...st.pet.pets, [equipped]: { ...petData, xp: petData.xp + expeditionPetXp(tier) } } };
+      }
     }
   }
 
@@ -946,11 +1063,15 @@ function runKill(st: GameState) {
   st.run.enemyT = 0;
   if (wasBoss) {
     st.run.hp = Math.min(rs.maxHp, st.run.hp + rs.maxHp * 0.25);
+    // С босса падает выбор дара: игрок сам решает, что взять (модалка runpick).
+    // Пока она открыта, runTick не наносит урон — бой ставится на паузу.
     const options = relicOffer(st.run.relics);
     if (options.length) {
-      const id = options[Math.floor(Math.random() * options.length)];
-      st.run.relics[id] = (st.run.relics[id] || 0) + 1;
-      toast(st, `Дар получен автоматически: «${RELICS.find(r => r.id === id)?.name ?? id}»`, "loot");
+      st.modal = { t: "runpick", options };
+    } else {
+      // Все дары уже на максимуме — компенсируем осколками.
+      st.shards += 5;
+      toast(st, "Все дары собраны под завязку: +5 осколков бездны", "loot");
     }
   }
 }
@@ -976,8 +1097,21 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
   const kind = st.run.kind;
   let shards = 0;
   if (kind === "exp") {
-    shards = abandoned ? Math.round(shardReward(reached, st.run.bosses, false) / 2) : shardReward(reached, st.run.bosses, win);
+    // Этапы Экспедиции щедрее: множители на шарды, золото и опыт за волны.
+    const tier = Math.min(Math.max(1, st.run.depth), EXPEDITION_MAX_TIER);
+    const base = shardReward(reached, st.run.bosses, win);
+    shards = Math.round(base * expeditionShardMult(tier) * (abandoned ? 0.5 : 1));
     st.shards += shards;
+    const goldBonus = Math.round(st.run.goldEarned * (expeditionGoldMult(tier) - 1));
+    if (goldBonus > 0 && !abandoned) { st.hero.gold += goldBonus; st.totals.goldEarned += goldBonus; }
+    const xpBonus = Math.round(reached * 12 * expeditionXpMult(tier) * (win ? 1 : 0.3) * (abandoned ? 0.5 : 1));
+    if (xpBonus > 0) gainXp(st, xpBonus, true);
+    // Победа открывает следующий этап (лестница I..VIII).
+    if (win && !abandoned && tier >= st.expeditionDepth && tier < EXPEDITION_MAX_TIER) {
+      st.expeditionDepth = tier + 1;
+      const def = expeditionDef(st.expeditionDepth);
+      toast(st, `Открыт этап Экспедиции ${def.roman}: руна крафтится в Мастерской`, "gem");
+    }
   } else if (win && !abandoned) {
     // победа в Портале: кристаллы + вещь Сета Бездны + шанс вещи сета Атласа
     const depth = st.run.depth;
@@ -1023,6 +1157,9 @@ function endRun(st: GameState, win: boolean, abandoned = false): GameState {
   return st;
 }
 
+/** Все рецепты Мастерской: базовые + руны экспедиции (ключи к этапам). */
+export const allCraftRecipes = () => [...CRAFT_RECIPES, ...EXPEDITION_RUNE_RECIPES];
+
 /* =============== helpers =============== */
 function toast(st: GameState, text: string, kind: "info" | "gold" | "loot" | "warn" | "gem" = "info") {
   st.toastSeq += 1;
@@ -1055,11 +1192,16 @@ function gainXp(st: GameState, xp: number, silent = false) {
   }
 }
 
+/** Бонус таланта «Охотник на боссов»: +2% урона по боссам за ранг (оба режима). */
+const bossHunterMult = (st: GameState) =>
+  1 + (st.prestige?.talents?.boss_damage || 0) * 0.02;
+
 function heroHit(st: GameState, stats: Stats, mult: number) {
   const e = st.battle.enemy;
   if (!e) return;
   const isCrit = Math.random() * 100 < stats.crit;
   let dmg = stats.dmg * mult * (0.9 + Math.random() * 0.2);
+  if (e.boss) dmg *= bossHunterMult(st);
   if (isCrit) {
     dmg *= stats.critDmg / 100;
     st.battle.combo += 1; // увеличиваем комбо при крите
@@ -1250,6 +1392,15 @@ function enemyHit(st: GameState, stats: Stats) {
   const taken = Math.max(1, Math.round(e.dmg * (0.9 + Math.random() * 0.2) * (1 - stats.mit)));
   st.hero.hp -= taken;
   pushFx(st, `-${fmt(taken)}`, "hurt", 18 + Math.random() * 24, 62 + Math.random() * 12);
+  // Талант «Авто-зелье»: при падении ниже 30% HP — глоток из рюкзака.
+  const autoPotionRank = st.prestige?.talents?.auto_potion || 0;
+  if (st.hero.hp > 0 && autoPotionRank > 0 && st.hero.potions > 0
+    && st.hero.hp < stats.maxHp * 0.3 && Math.random() < 0.15 * autoPotionRank) {
+    st.hero.potions -= 1;
+    st.hero.hp = Math.min(stats.maxHp, st.hero.hp + stats.maxHp * 0.45);
+    st.totals.potions += 1;
+    pushLog(st, "Авто-зелье сработало: +45% HP");
+  }
   if (st.hero.hp <= 0) {
     st.hero.hp = 0;
     st.battle.paused = true;
@@ -1314,7 +1465,7 @@ export function newGame(): GameState {
     weekly: emptyWeekly(),
     vip: 0,
     slotLevel: { weapon: 0, helm: 0, amulet: 0, armor: 0, gloves: 0, boots: 0, ring1: 0, ring2: 0 },
-    portalDepth: 1, path: null, pathXp: 0, atlas: {}, party: null, autoSellRarities: {},
+    portalDepth: 1, expeditionDepth: 1, path: null, pathXp: 0, atlas: {}, party: null, autoSellRarities: {},
     seasonal: { id: activeSeasonalEvent()?.id ?? "", points: 0, claimed: [] },
     run: newRun(),
     shards: 0,
@@ -1336,6 +1487,33 @@ export function newGame(): GameState {
     social: { friends: [], giftsReceived: [], giftsSent: [], referred: [], friendLeaderboard: [] },
     afkRewards: { available: false, offlineTime: 0, options: [], claimed: false, multiplied: false },
   };
+}
+
+/** Общее создание забега (экспедиция/портал): стартовые HP, фора Алтаря, первый враг. */
+function startRunFrom(s: GameState, kind: "exp" | "portal", depth: number): GameState {
+  const st: GameState = {
+    ...s, hero: { ...s.hero }, run: { ...newRun(kind, depth), relics: {} },
+    battle: { ...s.battle, paused: true, log: [...s.battle.log] },
+  };
+  if (kind === "portal") st.blood -= 1;
+  const rs = runStats(st);
+  st.run.maxHp = rs.maxHp;
+  st.run.hp = rs.maxHp;
+  st.run.active = true;
+  const headstartRank = s.meta?.headstart || 0;
+  for (let i = 0; i < headstartRank; i++) {
+    const options = relicOffer(st.run.relics);
+    if (!options.length) break;
+    const id = options[Math.floor(Math.random() * options.length)];
+    st.run.relics[id] = (st.run.relics[id] || 0) + 1;
+  }
+  if (headstartRank > 0) {
+    const boosted = runStats(st);
+    st.run.maxHp = boosted.maxHp;
+    st.run.hp = boosted.maxHp;
+  }
+  st.run.enemy = spawnRunEnemy(1, kind, depth);
+  return st;
 }
 
 /* =============== reducer =============== */
@@ -1531,11 +1709,11 @@ export function reducer(s: GameState, a: Action): GameState {
     }
 
     case "CRAFT": {
-      const def = CRAFT_RECIPES.find(r => r.id === a.id);
+      const def = allCraftRecipes().find(r => r.id === a.id);
       if (!def) return s;
       // Проверяем ресурсы
       for (const m of def.mats) if ((s.resources[m.type] || 0) < m.amount) { toast({ ...s }, "Не хватает ресурсов", "warn"); return s; }
-      const st = { ...s, hero: { ...s.hero }, resources: { ...s.resources }, inv: [...s.inv], totals: { ...s.totals }, slotLevel: { ...s.slotLevel }, battle: { ...s.battle, log: [...s.battle.log] } };
+      const st = { ...s, hero: { ...s.hero }, resources: { ...s.resources }, inv: [...s.inv], totals: { ...s.totals }, slotLevel: { ...s.slotLevel }, battle: { ...s.battle, log: [...s.battle.log] }, runes: { gear: s.runes.gear, inventory: s.runes.inventory } };
       for (const m of def.mats) st.resources[m.type] -= m.amount;
       const r = def.result;
       if (r.kind === "potion") {
@@ -1554,6 +1732,29 @@ export function reducer(s: GameState, a: Action): GameState {
         const key = def?.key ?? "stone_common";
         st.resources[key] = (st.resources[key] || 0) + 1;
         toast(st, `${def?.name ?? "Камень"} создан`, "gold");
+      } else if (r.kind === "rune") {
+        // Руна экспедиции: случайный вид руны заданного тира. Попадает в
+        // инвентарь рун (не в рюкзак): в шмоте усиливает статы, а этап
+        // Экспедиции открывается её тиром.
+        const tier = r.value ?? 1;
+        const runeDef = RUNES[Math.floor(Math.random() * RUNES.length)]!;
+        const existing = st.runes.inventory.find(i => i.runeId === runeDef.id && (i.tier ?? 1) === tier);
+        const runes = existing
+          ? st.runes.inventory.map(i => (i.runeId === runeDef.id && (i.tier ?? 1) === tier ? { ...i, count: i.count + 1 } : i))
+          : [...st.runes.inventory, { runeId: runeDef.id, count: 1, tier }];
+        st.runes = { gear: st.runes.gear, inventory: runes };
+        toast(st, `Высечена руна: «${runeDef.name}» тира ${tier}!`, "gem");
+      } else if (r.kind === "drill") {
+        // Сверло «Гнездовщик»: падает в инвентарь, применяется через SOCKET_DRILL.
+        st.uidSeq += 1;
+        const drill: Item = { uid: st.uidSeq, base: "amulet", name: "Сверло «Гнездовщик»", rarity: 2, ilvl: 0, stats: {}, sell: 150, sockets: 0 };
+        if (st.inv.length >= INV_CAP) {
+          st.hero.gold += drill.sell; st.totals.goldEarned += drill.sell;
+          toast(st, "Рюкзак полон — сверло сразу продано", "gold");
+        } else {
+          st.inv = [...st.inv, drill];
+          toast(st, "Выковано сверло «Гнездовщик» — примени из рюкзака на предмет", "gem");
+        }
       } else if (r.kind === "item") {
         const ilvl = autoIlvl(st.battle.zone, st.battle.wave, false) + (r.ilvlBonus ?? 0);
         st.uidSeq += 1;
@@ -1574,7 +1775,7 @@ export function reducer(s: GameState, a: Action): GameState {
 
     // Крафт с выбором слота: заточка в конкретный слот / ковка предмета под слот.
     case "CRAFT_SLOT": {
-      const def = CRAFT_RECIPES.find(r => r.id === a.id);
+      const def = allCraftRecipes().find(r => r.id === a.id);
       if (!def) return s;
       const slot: Slot = a.slot;
       // Проверяем ресурсы
@@ -1691,29 +1892,34 @@ export function reducer(s: GameState, a: Action): GameState {
       }
       const depth = kind === "portal"
         ? Math.min(Math.max(1, a.depth || 1), Math.max(1, s.portalDepth))
-        : 1;
-      const st: GameState = {
-        ...s, hero: { ...s.hero }, run: { ...newRun(kind, depth), relics: {} },
-        battle: { ...s.battle, paused: true, log: [...s.battle.log] },
-      };
-      if (kind === "portal") st.blood -= 1;
-      const rs = runStats(st);
-      st.run.maxHp = rs.maxHp;
-      st.run.hp = rs.maxHp;
-      st.run.active = true;
-      const headstartRank = s.meta?.headstart || 0;
-      for (let i = 0; i < headstartRank; i++) {
-        const options = relicOffer(st.run.relics);
-        if (!options.length) break;
-        const id = options[Math.floor(Math.random() * options.length)];
-        st.run.relics[id] = (st.run.relics[id] || 0) + 1;
+        // Экспедиция: ключ — руна этапа. Этап определяется тиром руны в инвентаре
+        // (или a.depth из UI), ниже свежим сейвам инициализируем expeditionDepth.
+        : Math.min(Math.max(1, a.depth || 1), Math.max(1, s.expeditionDepth ?? 1), EXPEDITION_MAX_TIER);
+      const needTier = EXPEDITION_TIERS.find(t => t.tier === depth) ?? EXPEDITION_TIERS[0];
+      if (kind === "exp" && depth > 1) {
+        // «Ключ» этапа: скрафченная руна нужного тира. Потребляем её на входе.
+        const idx = s.runes.inventory.findIndex(i => (i.tier ?? 1) >= depth && i.count > 0);
+        if (idx < 0) {
+          const st0 = { ...s };
+          const cost = needTier.runeCost.map(m => `${RESOURCE_ICON[m.type]}×${m.amount}`).join(" ");
+          toast(st0, `Нужна руна этапа ${needTier.roman}! Крафт в Мастерской: ${cost}`, "warn");
+          return st0;
+        }
+        const st1 = {
+          ...s,
+          runes: {
+            gear: s.runes.gear,
+            inventory: s.runes.inventory
+              .map((entry, i) => (i === idx ? { ...entry, count: entry.count - 1 } : entry))
+              .filter(entry => entry.count > 0),
+          },
+        };
+        toast(st1, `Руна этапа ${needTier.roman} поглощена Бездной`, "gem");
+        const st = startRunFrom(st1, kind, depth);
+        pushLog(st, `Экспедиция ${needTier.roman}: фарм на паузе — герой в Бездне`);
+        return st;
       }
-      if (headstartRank > 0) {
-        const boosted = runStats(st);
-        st.run.maxHp = boosted.maxHp;
-        st.run.hp = boosted.maxHp;
-      }
-      st.run.enemy = spawnRunEnemy(1, kind, depth);
+      const st = startRunFrom(s, kind, depth);
       pushLog(st, kind === "portal" ? "Портал Бездны поглотил героя. Назад — только с лутом" : "Экспедиция началась! Фарм на паузе — герой в Бездне");
       return st;
     }
@@ -2000,7 +2206,10 @@ export function reducer(s: GameState, a: Action): GameState {
     // === НОВЫЕ ДЕЙСТВИЯ ===
     case "PRESTIGE_DO": {
       if (s.battle.zone < PRESTIGE_CONFIG.minZone) return s;
-      const essenceGain = Math.floor(s.battle.zone * PRESTIGE_CONFIG.essencePerZone);
+      // Талант «Собиратель сущности» и базовый бонус престижа ускоряют фарм эссенции.
+      const essenceTalent = s.prestige?.talents?.essence_boost || 0;
+      const prestigeBase = s.prestige.count * PRESTIGE_CONFIG.baseBonusPct / 100;
+      const essenceGain = Math.floor(s.battle.zone * PRESTIGE_CONFIG.essencePerZone * (1 + essenceTalent * 0.02) * (1 + prestigeBase));
       const talentPoints = s.prestige.count * PRESTIGE_CONFIG.talentPointsPerPrestige;
       return {
         ...s,
@@ -2070,26 +2279,28 @@ export function reducer(s: GameState, a: Action): GameState {
     }
     
     case "GUILD_BOSS_START": {
-      if (s.guildBoss && s.guildBoss.active && !s.guildBoss.claimed) return s; // нельзя начать, пока не забрали награду
+      if (s.guildBoss && s.guildBoss.active && !s.guildBoss.claimed) return s;
       const now = Date.now();
-      const durationMs = 24 * 60 * 60 * 1000; // 24 часа
-      const bossLevel = Math.max(1, Math.floor(s.hero.level / 5)); // уровень босса зависит от уровня героя
-      const baseHp = 10000 * Math.pow(1.5, bossLevel - 1);
-      const baseDmg = 50 * Math.pow(1.3, bossLevel - 1);
+      const durationMs = 24 * 60 * 60 * 1000;
+      const bossLevel = Math.max(1, Math.floor(s.hero.level / 5));
+      const bossDef = GUILD_BOSSES[Math.min(bossLevel - 1, GUILD_BOSSES.length - 1)];
+      const bossHp = bossDef ? bossDef.hp * bossLevel : 500000 * Math.pow(1.5, bossLevel - 1);
+      const bossDmg = bossDef ? bossDef.dmg * bossLevel : 50 * Math.pow(1.3, bossLevel - 1);
+      const stats2 = getStats(s);
       const boss: GuildBossS = {
         active: true,
-        bossKey: `guild_boss_${bossLevel}`,
-        bossName: `Гильдейский Босс ${bossLevel} ур.`,
-        bossHp: Math.floor(baseHp),
-        bossMaxHp: Math.floor(baseHp),
-        bossDmg: Math.floor(baseDmg),
-        hp: Math.floor(baseHp),
-        maxHp: Math.floor(baseHp),
+        bossKey: bossDef?.id ?? `guild_boss_${bossLevel}`,
+        bossName: bossDef?.name ?? `Гильдейский Босс ${bossLevel} ур.`,
+        bossHp,
+        bossMaxHp: bossHp,
+        bossDmg,
+        hp: bossHp,
+        maxHp: bossHp,
         name: `Босс Гильдии`,
         level: bossLevel,
         timeElapsed: 0,
         personalDamage: 0,
-        attacksLeft: 3,
+        attacksLeft: -1,
         expiresAt: now + durationMs,
         damageDealt: 0,
         guildDamage: 0,
@@ -2097,48 +2308,57 @@ export function reducer(s: GameState, a: Action): GameState {
         rewardClaimed: false,
         claimed: false,
         leaderboard: [],
+        heroHp: stats2.maxHp,
+        heroMaxHp: stats2.maxHp,
+        // Таймер отсчитывается ВВЕРХ от 0 (так его читает UI), поэтому 0 —
+        // это «первый удар босса через bossAttackInterval секунд».
+        bossAttackT: 0,
+        playerAttackT: 0,
+        isFighting: true,
+        bossLocked: false,
+        rewardRuneId: null,
       };
       return { ...s, guildBoss: boss };
     }
     
     case "GUILD_BOSS_ATTACK": {
-      if (!s.guildBoss || !s.guildBoss.active || s.guildBoss.claimed) return s;
-      if (s.guildBoss.attacksLeft <= 0) return s;
-      if (s.guildBoss.hp <= 0) return s; // босс уже мёртв
+      const gb = s.guildBoss;
+      if (!gb || !gb.active || gb.claimed) return s;
+      if (gb.hp <= 0) return s;
+      if (!gb.isFighting) return s;
       
       const stats = getStats(s);
-      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * 10);
-      const newHp = Math.max(0, s.guildBoss.bossHp - damage);
-      const newPersonalDamage = s.guildBoss.personalDamage + damage;
-      const newGuildDamage = s.guildBoss.guildDamage + damage;
+      const dmgMult = GUILD_BOSS_CONFIG.playerDamageMultiplier;
+      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * dmgMult);
+      const newHp = Math.max(0, gb.bossHp - damage);
+      const newPersonalDamage = gb.personalDamage + damage;
+      const newGuildDamage = gb.guildDamage + damage;
       
-      // Обновление лидерборда
+      // Обновление лидерборда. ВАЖНО: копируем записи, а не мутируем объекты
+      // предыдущего состояния — иначе редьюсер перестаёт быть чистым.
       const playerName = s.hero.name || "Игрок";
-      let leaderboard = [...(s.guildBoss.leaderboard || [])];
-      const existingEntry = leaderboard.find(e => e.name === playerName);
-      if (existingEntry) {
-        existingEntry.damage += damage;
-      } else {
-        leaderboard.push({ name: playerName, damage, losses: 0 });
-      }
-      leaderboard.sort((a, b) => b.damage - a.damage);
+      const hasEntry = (gb.leaderboard || []).some(e => e.name === playerName);
+      const leaderboard = (gb.leaderboard || [])
+        .map(e => (e.name === playerName ? { ...e, damage: e.damage + damage } : { ...e }))
+        .concat(hasEntry ? [] : [{ name: playerName, damage, losses: 0 }])
+        .sort((a, b) => b.damage - a.damage);
       
       // Проверка смерти босса
       const bossDead = newHp <= 0;
-      const rewardPending = bossDead && !s.guildBoss.rewardPending;
       
       return {
         ...s,
         guildBoss: {
-          ...s.guildBoss,
+          ...gb,
           hp: newHp,
           bossHp: newHp,
           personalDamage: newPersonalDamage,
           damageDealt: newPersonalDamage, // для совместимости
           guildDamage: newGuildDamage,
-          attacksLeft: s.guildBoss.attacksLeft - 1,
+          attacksLeft: gb.attacksLeft > 0 ? gb.attacksLeft - 1 : gb.attacksLeft,
           leaderboard,
-          rewardPending: rewardPending ? true : s.guildBoss.rewardPending,
+          rewardPending: bossDead ? true : gb.rewardPending,
+          isFighting: bossDead ? false : gb.isFighting,
         },
       };
     }
@@ -2167,16 +2387,37 @@ export function reducer(s: GameState, a: Action): GameState {
         reward = Math.floor(reward * 1.2); // +20% бонус
       }
       
-      return {
+      // === РУНА НАГРАДА ЗА РЕЙД: тир руны растёт с силой рейда ===
+      // Тир = min(8, 1 + floor(уровень босса / 3)): чем сильнее рейд, тем
+      // ценнее руна. В инвентаре руны хранятся с тиром (см. крафт рун).
+      let rewardRuneId: string | null = null;
+      const raidTier = Math.min(EXPEDITION_MAX_TIER, 1 + Math.floor((s.guildBoss.level || 1) / 3));
+      if (Math.random() < 0.4) {
+        const runeDef = RUNES[Math.floor(Math.random() * RUNES.length)];
+        if (runeDef) {
+          rewardRuneId = runeDef.id;
+          const existingRune = s.runes.inventory.find(i => i.runeId === runeDef.id && (i.tier ?? 1) === raidTier);
+          if (existingRune) {
+            s.runes.inventory = s.runes.inventory.map(i => (i.runeId === runeDef.id && (i.tier ?? 1) === raidTier ? { ...i, count: i.count + 1 } : i));
+          } else {
+            s.runes.inventory = [...s.runes.inventory, { runeId: runeDef.id, count: 1, tier: raidTier }];
+          }
+          toast(s, `Награда рейда: руна ${runeDef.name} тира ${raidTier}!`, "gem");
+        }
+      }
+
+      const newState = {
         ...s,
-        guildBoss: { 
-          ...s.guildBoss, 
-          claimed: true, 
+        guildBoss: {
+          ...s.guildBoss,
+          claimed: true,
           rewardClaimed: true,
           rewardPending: false,
+          rewardRuneId,
         },
         hero: { ...s.hero, gold: s.hero.gold + reward },
       };
+      return newState;
     }
     
     case "BATTLE_PASS_CLAIM_FREE": {
@@ -2239,6 +2480,7 @@ export function reducer(s: GameState, a: Action): GameState {
       const petDef = PETS.find(p => p.id === a.petId);
       const petData = s.pet.pets[a.petId];
       if (!petDef || !petData) return s;
+      if ((petData.level || 1) >= PET_LEVEL_CAP) return s;
       // Проверяем уровень героя (питомца нельзя улучшать ниже его уровня разблокировки)
       if (s.hero.level < petDef.unlockLevel) return s;
       const cost = petDef.levelUpCost * petData.level;
@@ -2279,7 +2521,27 @@ export function reducer(s: GameState, a: Action): GameState {
         },
       };
     }
-    
+
+    case "PET_STAR_UP": {
+      // Звезда питомца: +25% к пассивке, цена — эссенция + кровь (растёт со звёздами).
+      const petDef = PETS.find(p => p.id === a.petId);
+      const petData = s.pet.pets[a.petId];
+      if (!petDef || !petData) return s;
+      const stars = petData.stars || 0;
+      if (stars >= PET_STAR_CAP) return s;
+      const cost = petStarCost(stars);
+      if ((s.prestige?.essence || 0) < cost.essence || (s.blood || 0) < cost.blood) return s;
+      return {
+        ...s,
+        prestige: { ...s.prestige, essence: s.prestige.essence - cost.essence },
+        blood: (s.blood || 0) - cost.blood,
+        pet: {
+          ...s.pet,
+          pets: { ...s.pet.pets, [a.petId]: { ...petData, stars: stars + 1 } },
+        },
+      };
+    }
+
     case "TOURNAMENT_FIGHT": {
       if (!s.tournament.active || s.tournament.tickets <= 0) return s;
       const win = Math.random() < 0.5;
@@ -2310,40 +2572,84 @@ export function reducer(s: GameState, a: Action): GameState {
     case "RUNE_INSERT": {
       const rune = RUNES.find(r => r.id === a.runeId);
       if (!rune) return s;
-      const gearRuneData = s.runes.gear[a.gearUid] || { uid: a.gearUid, runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }] };
-      if (a.slotIndex < 0 || a.slotIndex >= 3) return s;
-      const invRune = s.runes.inventory.find(i => i.runeId === a.runeId);
+      if (a.slotIndex < 0 || a.slotIndex >= GEAR_SOCKET_SLOTS) return s;
+      // Гнездо должно существовать: ролл при дропе или сверло. Без гнёзд — отказ.
+      const socketsOf = (uid: number): number => {
+        const fromInv = s.inv.find(i => i.uid === uid)?.sockets ?? 0;
+        if (fromInv > 0) return fromInv;
+        for (const slot of SLOTS) { const eq = s.equip[slot]; if (eq?.uid === uid) return eq.sockets ?? 0; }
+        return s.runes.gear[uid]?.sockets ?? 0;
+      };
+      if (a.slotIndex >= socketsOf(a.gearUid)) return s;
+      const gearRuneData = s.runes.gear[a.gearUid] || { uid: a.gearUid, sockets: socketsOf(a.gearUid), runes: [{ runeId: null, rank: 0 }, { runeId: null, rank: 0 }, { runeId: null, rank: 0 }] };
+      // Руну вставляем вместе с её тиром: ищем стек нужного тира (дефолт 1).
+      const wantTier = a.tier ?? 1;
+      const invRune = s.runes.inventory.find(i => i.runeId === a.runeId && (i.tier ?? 1) === wantTier);
       if (!invRune || invRune.count <= 0) return s;
       const newRunes = [...gearRuneData.runes];
-      newRunes[a.slotIndex] = { runeId: a.runeId, rank: 1 };
+      newRunes[a.slotIndex] = { runeId: a.runeId, rank: wantTier };
       return {
         ...s,
         runes: {
           gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
-          inventory: s.runes.inventory.map(i => i.runeId === a.runeId ? { ...i, count: i.count - 1 } : i),
+          inventory: s.runes.inventory.map(i => (i.runeId === a.runeId && (i.tier ?? 1) === wantTier ? { ...i, count: i.count - 1 } : i)).filter(i => i.count > 0),
         },
       };
     }
     
     case "RUNE_REMOVE": {
       const gearRuneData = s.runes.gear[a.gearUid];
-      if (!gearRuneData || a.slotIndex < 0 || a.slotIndex >= 3) return s;
+      if (!gearRuneData || a.slotIndex < 0 || a.slotIndex >= GEAR_SOCKET_SLOTS) return s;
       const slot = gearRuneData.runes[a.slotIndex];
       if (!slot.runeId) return s;
       const newRunes = [...gearRuneData.runes];
       newRunes[a.slotIndex] = { runeId: null, rank: 0 };
-      const existingInv = s.runes.inventory.find(i => i.runeId === slot.runeId);
+      // Возвращаем руну с её тиром (тир храним в rank гнезда).
+      const backTier = slot.rank || 1;
+      const existingInv = s.runes.inventory.find(i => i.runeId === slot.runeId && (i.tier ?? 1) === backTier);
       return {
         ...s,
         runes: {
           gear: { ...s.runes.gear, [a.gearUid]: { ...gearRuneData, runes: newRunes } },
           inventory: existingInv 
-            ? s.runes.inventory.map(i => i.runeId === slot.runeId ? { ...i, count: i.count + 1 } : i)
-            : [...s.runes.inventory, { runeId: slot.runeId, count: 1 }],
+            ? s.runes.inventory.map(i => (i.runeId === slot.runeId && (i.tier ?? 1) === backTier ? { ...i, count: i.count + 1 } : i))
+            : [...s.runes.inventory, { runeId: slot.runeId, count: 1, tier: backTier }],
         },
       };
     }
-    
+
+    case "SOCKET_DRILL": {
+      // Сверло «Гнездовщик»: +1 гнездо к предмету из рюкзака или надетому (макс 3).
+      const drillIdx = s.inv.findIndex(i => i.name === "Сверло «Гнездовщик»");
+      if (drillIdx < 0) return s;
+      const applyDrill = (it: Item): Item | null => {
+        if (it.name === "Сверло «Гнездовщик»") return null; // само сверло не сверлим
+        const cur = it.sockets ?? 0;
+        if (cur >= GEAR_SOCKET_SLOTS) return null;
+        return { ...it, sockets: cur + 1 };
+      };
+      const inInv = s.inv.find(i => i.uid === a.itemUid);
+      if (inInv) {
+        const drilled = applyDrill(inInv);
+        if (!drilled) return s;
+        const inv = s.inv.filter((_, i) => i !== drillIdx).map(i => (i.uid === a.itemUid ? drilled : i));
+        return { ...s, inv, totals: { ...s.totals } };
+      }
+      for (const slot of SLOTS) {
+        const eq = s.equip[slot];
+        if (eq?.uid === a.itemUid) {
+          const drilled = applyDrill(eq);
+          if (!drilled) return s;
+          return {
+            ...s,
+            inv: s.inv.filter((_, i) => i !== drillIdx),
+            equip: { ...s.equip, [slot]: drilled },
+          };
+        }
+      }
+      return s;
+    }
+
     case "BASE_COLLECT": {
       if (!s.base.unlocked) return s;
       const now = Date.now();
@@ -2512,32 +2818,71 @@ function tick(s: GameState, dt: number): GameState {
     if (current.daily.date !== s.daily.date) toast(current, "Новый день: +1 жетон дуэлей", "gem");
   }
   const st = current.party ? partyTick(current, dt) : current.run.active ? runTick(current, dt) : farmTick(current, dt);
-  
-  // Обновление таймера гильдийского босса
-  if (st.guildBoss && st.guildBoss.active && !st.guildBoss.claimed) {
-    const updatedGuildBoss = {
-      ...st.guildBoss,
-      timeElapsed: st.guildBoss.timeElapsed + dt,
-    };
-    
-    // Проверка истечения времени
+
+  // Гильдейский босс: таймер рейда и боевой цикл в одном блоке.
+  // Раньше это были два блока с одинаковым условием, причём первый делал return —
+  // бой босса не тикал вообще, а duelTick ниже не вызывался, пока рейд активен.
+  let next = st;
+  const gb = st.guildBoss;
+  if (gb && gb.active && !gb.claimed) {
+    const gbStats = getStats(st);
     const now = Date.now();
-    if (now >= updatedGuildBoss.expiresAt && !updatedGuildBoss.rewardPending) {
-      updatedGuildBoss.rewardPending = true;
+    const bossAttackInterval = GUILD_BOSS_CONFIG.bossAttackInterval;
+    const dmgMult = GUILD_BOSS_CONFIG.playerDamageMultiplier;
+    const playerName = st.hero.name || "Игрок";
+
+    const updated: GuildBossS = { ...gb, timeElapsed: gb.timeElapsed + dt };
+
+    if (gb.isFighting && gb.heroHp > 0 && gb.hp > 0) {
+      updated.playerAttackT = gb.playerAttackT + gbStats.as * dt;
+      updated.bossAttackT = gb.bossAttackT + dt;
+
+      // Автоатаки героя. Лимит в 20 ударов за тик — защита от зависания
+      // при экстремальной скорости атаки (dt в цикле и так ограничен 0.5 сек).
+      let swings = 0;
+      while (updated.playerAttackT >= 1 && updated.hp > 0 && swings < 20) {
+        swings += 1;
+        updated.playerAttackT -= 1;
+        const damage = Math.round(gbStats.dmg * (1 + gbStats.dmgPct / 100) * dmgMult);
+        updated.hp = Math.max(0, updated.hp - damage);
+        updated.personalDamage += damage;
+        updated.guildDamage += damage;
+        updated.damageDealt = updated.personalDamage;
+        updated.bossHp = updated.hp;
+
+        // Копируем записи лидерборда, не мутируя объекты из прошлого состояния.
+        const hasEntry = (updated.leaderboard || []).some(e => e.name === playerName);
+        updated.leaderboard = (updated.leaderboard || [])
+          .map(e => (e.name === playerName ? { ...e, damage: e.damage + damage } : { ...e }))
+          .concat(hasEntry ? [] : [{ name: playerName, damage, losses: 0 }])
+          .sort((a, b) => b.damage - a.damage);
+
+        if (updated.hp <= 0) { updated.rewardPending = true; updated.isFighting = false; break; }
+      }
+
+      if (updated.bossAttackT >= bossAttackInterval && updated.heroHp > 0 && updated.hp > 0) {
+        updated.bossAttackT = 0;
+        const bossDmg = Math.round(gb.bossDmg * (0.9 + Math.random() * 0.2));
+        const mit = gbStats.armor / (gbStats.armor + 110);
+        const taken = Math.max(1, Math.round(bossDmg * (1 - mit)));
+        updated.heroHp = Math.max(0, updated.heroHp - taken);
+        // Рейд длится 24 часа и не должен обрываться одним ударом: герой
+        // поднимается с частью HP, а награда остаётся доступной только за
+        // убитого босса или за истёкшее время (иначе её забирали бы без боя).
+        if (updated.heroHp <= 0) updated.heroHp = Math.round(updated.heroMaxHp * 0.5);
+      }
     }
-    
-    // Проверка смерти босса (если вдруг не было проверено при атаке)
-    if (updatedGuildBoss.hp <= 0 && !updatedGuildBoss.rewardPending) {
-      updatedGuildBoss.rewardPending = true;
-    }
-    
-    return { ...st, guildBoss: updatedGuildBoss };
+
+    if (now >= updated.expiresAt && !updated.rewardPending) { updated.rewardPending = true; }
+    if (updated.hp <= 0 && !updated.rewardPending) { updated.rewardPending = true; updated.isFighting = false; updated.bossLocked = false; }
+
+    next = { ...st, guildBoss: updated };
   }
   
-  if (st.duel.state === "idle" && !st.duel.fx.length) return st;
+  if (next.duel.state === "idle" && !next.duel.fx.length) return next;
   const d2: GameState = {
-    ...st, hero: { ...st.hero }, totals: { ...st.totals },
-    duel: { ...st.duel, cds: { ...st.duel.cds }, fx: st.duel.fx.map(f => ({ ...f })), log: [...st.duel.log], foe: st.duel.foe ? { ...st.duel.foe } : null },
+    ...next, hero: { ...next.hero }, totals: { ...next.totals },
+    duel: { ...next.duel, cds: { ...next.duel.cds }, fx: next.duel.fx.map(f => ({ ...f })), log: [...next.duel.log], foe: next.duel.foe ? { ...next.duel.foe } : null },
   };
   duelTick(d2, dt);
   return d2;
@@ -2715,12 +3060,20 @@ export function saveGame(s: GameState, vkUserId?: number) {
   try {
     const persistModal = s.modal?.t === "class" || s.modal?.t === "activity" ? s.modal : null;
     localStorage.setItem(getSaveKey(vkUserId), JSON.stringify({ ...s, lastSeen: Date.now(), meta: { ...(s.meta || {}), savedAt: Date.now() }, toasts: [], modal: persistModal }));
-  } catch { /* noop */ }
+  } catch (e) {
+    // Квота localStorage исчерпана или хранилище отключено (приватный режим):
+    // молча терять прогресс нельзя — хотя бы логируем, а облачный синк продолжит работать.
+    console.warn("[save] localStorage недоступен, прогресс не записан:", e);
+  }
 }
 
 // Приведение состояния к актуальной схеме (миграция со старых сейвов).
 // Вызывается и при загрузке с диска, и при гидратации из облака.
-export function migrateState(s: GameState): GameState {
+export function migrateState(input: GameState): GameState {
+  // Работаем с копией: функцию вызывают и из HYDRATE_STATE, и из loadGame, а
+  // мутировать объект, который уже лежит в состоянии приложения, нельзя —
+  // иначе редьюсер перестаёт быть чистым.
+  const s: GameState = JSON.parse(JSON.stringify(input)) as GameState;
   s.toasts = [];
   // Гарантируем наличие всех обязательных полей: старые/облачные сейвы могут не
   // содержать их, и тогда UI/редьюсер упадут (s.totals.kills, s.inv, s.daily.date…).
@@ -2762,6 +3115,7 @@ export function migrateState(s: GameState): GameState {
   if (!s.meta) s.meta = {};
   if (s.bestWave == null) s.bestWave = 0;
   if (s.blood == null) s.blood = 0;
+  if (s.expeditionDepth == null) s.expeditionDepth = 1;
   if (s.godstone === undefined) s.godstone = null;
   if (!s.duel) s.duel = newDuel();
   else s.duel = { ...newDuel(), ...s.duel, cds: { ...(s.duel.cds || {}) }, fx: [], log: [...(s.duel.log || [])] };
@@ -2771,7 +3125,9 @@ export function migrateState(s: GameState): GameState {
   if (!s.autoSellRarities) s.autoSellRarities = {};
   if (!s.atlas) s.atlas = {};
   if (!s.seasonal) s.seasonal = { id: activeSeasonalEvent()?.id ?? "", points: 0, claimed: [] };
-  if (s.modal?.t === "runpick") s.modal = null;
+  // Модалку выбора дара сохраняем, пока забег жив и есть из чего выбирать:
+  // иначе после перезагрузки страницы игрок молча терял бы награду с босса.
+  if (s.modal?.t === "runpick" && (!s.run.active || !(s.modal.options || []).length)) s.modal = null;
   s.duel.fx = [];
   if (s.duel.state === "search") s.duel = { ...s.duel, state: "idle", tokens: s.duel.tokens + 1 };
   if (s.party) {
@@ -2822,6 +3178,16 @@ export function migrateState(s: GameState): GameState {
     owned: [...(s.pet?.owned || [])],
     pets: { ...ref.pet.pets, ...(s.pet?.pets || {}) },
   };
+  // Старые сейвы: у предметов нет гнёзд (фича добавлена позже) — добросовестно
+  // дороллим по шансам редкости, иначе старый лут навсегда без слотов под руны.
+  // Гнёзд не было в сейве → rollSockets решает, а не «дарим всем по гнезду».
+  const backfillSockets = (it: Item | null | undefined): Item | null | undefined => {
+    if (!it || typeof it.sockets === "number") return it;
+    const rolled = rollSockets(it.rarity);
+    return rolled > 0 ? { ...it, sockets: rolled } : it;
+  };
+  s.inv = (s.inv || []).map(it => backfillSockets(it) ?? it);
+  for (const slot of SLOTS) s.equip[slot] = backfillSockets(s.equip[slot]) as GameState["equip"][typeof slot];
   if (!s.tournament) s.tournament = { active: false, tickets: 10, wins: 0, losses: 0, fightsLeft: 5, bestWins: 0, currency: 0, endDate: 0, seasonEndsAt: 0, canClaimReward: false, lastSeasonRank: 0, leaderboard: [] };
   if (!s.runes) s.runes = { gear: {}, inventory: [] };
   if (!s.base) s.base = { unlocked: false, buildings: {}, resources: {}, lastCollectTime: 0 };

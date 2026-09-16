@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { settleState, isProgressSafe, getOfflineIncome } from "./state-simulator.ts";
-import { newGame, reducer } from "../shared/src/game/logic.ts";
-import type { GameState } from "../shared/src/game/logic.ts";
+import { newGame, reducer } from "../src/game/logic.ts";
+import type { GameState } from "../src/game/types.ts";
 
 function tick(s: GameState, dt = 0.1): GameState {
   return reducer(s, { type: "TICK", dt } as any);

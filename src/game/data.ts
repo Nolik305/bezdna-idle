@@ -70,22 +70,22 @@ export interface PassiveDef {
   desc: (rank: number) => string; stat: string; classId?: ClassId;
 }
 export const PASSIVES: PassiveDef[] = [
-  { id: "power", name: "Мощь", icon: "sword", max: 10, stat: "dmgPct", desc: rank => `+${rank * 4}% к урону` },
-  { id: "focus", name: "Фокус", icon: "target", max: 10, stat: "crit", desc: rank => `+${rank * 1.5}% к криту` },
-  { id: "vitality", name: "Живучесть", icon: "heart", max: 10, stat: "hpPct", desc: rank => `+${rank * 3}% к максимальному HP` },
-  { id: "skin", name: "Каменная кожа", icon: "shield", max: 10, stat: "armor", desc: rank => `+${rank * 2}% к броне` },
-  { id: "greed", name: "Жадность", icon: "coin", max: 10, stat: "goldPct", desc: rank => `+${rank * 5}% к золоту` },
-  { id: "wisdom", name: "Мудрость", icon: "scroll", max: 10, stat: "xpPct", desc: rank => `+${rank * 4}% к опыту` },
-  { id: "fortune", name: "Удача", icon: "clover", max: 10, stat: "luck", desc: rank => `+${rank * 3}% к удаче` },
-  { id: "treasury", name: "Скрытая казна", icon: "chest", max: 10, stat: "offline", desc: rank => `+${rank * 5}% к офлайн-доходу` },
-  { id: "arcane_power", name: "Арканная мощь", icon: "staff", max: 10, stat: "dmgPct", classId: "mage", desc: rank => `+${rank * 5}% к урону заклинаний` },
-  { id: "spell_focus", name: "Фокус заклинаний", icon: "spark", max: 10, stat: "cooldownPct", classId: "mage", desc: rank => `-${rank * 2}% к перезарядке скиллов` },
-  { id: "mana_surge", name: "Всплеск маны", icon: "mana", max: 10, stat: "xpPct", classId: "mage", desc: rank => `+${rank * 5}% к опыту от заклинаний` },
-  { id: "arcane_barrier", name: "Арканный барьер", icon: "shield", max: 10, stat: "hpPct", classId: "mage", desc: rank => `+${rank * 4}% к максимальному HP` },
-  { id: "marksmanship", name: "Меткая стрельба", icon: "target", max: 10, stat: "crit", classId: "archer", desc: rank => `+${rank * 2}% к криту` },
-  { id: "rapid_fire", name: "Шквал стрел", icon: "arrows", max: 10, stat: "as", classId: "archer", desc: rank => `+${rank * 3}% к скорости атаки` },
-  { id: "venomcraft", name: "Ядовитые наконечники", icon: "venom", max: 10, stat: "dotPct", classId: "archer", desc: rank => `+${rank * 0.06} к силе яда` },
-  { id: "hunter", name: "Охотничий инстинкт", icon: "paw", max: 10, stat: "goldPct", classId: "archer", desc: rank => `+${rank * 4}% к золоту и добыче` },
+    { id: "power", name: "Мощь", icon: "sword", max: 10, stat: "dmgPct", desc: rank => `+${rank * 2}% к урону` },
+  { id: "focus", name: "Фокус", icon: "target", max: 10, stat: "crit", desc: rank => `+${rank}% к криту` },
+  { id: "vitality", name: "Живучесть", icon: "heart", max: 10, stat: "hpPct", desc: rank => `+${rank * 2}% к максимальному HP` },
+  { id: "skin", name: "Каменная кожа", icon: "shield", max: 10, stat: "armor", desc: rank => `+${rank * 1.5}% к броне` },
+  { id: "greed", name: "Жадность", icon: "coin", max: 10, stat: "goldPct", desc: rank => `+${rank * 2}% к золоту` },
+  { id: "wisdom", name: "Мудрость", icon: "scroll", max: 10, stat: "xpPct", desc: rank => `+${rank * 2}% к опыту` },
+  { id: "fortune", name: "Удача", icon: "clover", max: 10, stat: "luck", desc: rank => `+${rank * 1.5}% к удаче` },
+  { id: "treasury", name: "Скрытая казна", icon: "chest", max: 10, stat: "offline", desc: rank => `+${rank * 2}% к офлайн-доходу` },
+  { id: "arcane_power", name: "Арканная мощь", icon: "staff", max: 10, stat: "dmgPct", classId: "mage", desc: rank => `+${rank * 2}% к урону заклинаний` },
+  { id: "spell_focus", name: "Фокус заклинаний", icon: "spark", max: 10, stat: "cooldownPct", classId: "mage", desc: rank => `-${rank * 1.2}% к перезарядке скиллов` },
+  { id: "mana_surge", name: "Всплеск маны", icon: "mana", max: 10, stat: "xpPct", classId: "mage", desc: rank => `+${rank * 2}% к опыту от заклинаний` },
+  { id: "arcane_barrier", name: "Арканный барьер", icon: "shield", max: 10, stat: "hpPct", classId: "mage", desc: rank => `+${rank * 2}% к максимальному HP` },
+  { id: "marksmanship", name: "Меткая стрельба", icon: "target", max: 10, stat: "crit", classId: "archer", desc: rank => `+${rank * 1.2}% к криту` },
+  { id: "rapid_fire", name: "Шквал стрел", icon: "arrows", max: 10, stat: "as", classId: "archer", desc: rank => `+${rank * 2}% к скорости атаки` },
+  { id: "venomcraft", name: "Ядовитые наконечники", icon: "venom", max: 10, stat: "dotPct", classId: "archer", desc: rank => `+${rank * 0.04} к силе яда` },
+  { id: "hunter", name: "Охотничий инстинкт", icon: "paw", max: 10, stat: "goldPct", classId: "archer", desc: rank => `+${rank * 2}% к золоту и добыче` },
 ];
 
 /* ================= ZONES & MOBS ================= */
@@ -146,15 +146,44 @@ export const RARITY: { name: string; color: string; mult: number }[] = [
   { name: "Бездна", color: "#ff4d6d", mult: 4.4 },
 ];
 
+/* ================= ГНЁЗДА ДЛЯ РУН ================= */
+// Без гнёзд: обычка/необычка (0-1 ранг). Шанс растёт с редкостью:
+// синь 15% ×1, эпик 30% (35% шанс на 2), легенда 50% (35% шанс на 2), бездна 70% (до 3).
+// + сверло «Гнездовщик» из мастерской досверливает недостающие (макс 3).
+export const SOCKET_DROP_CHANCE: Record<number, number> = { 2: 0.15, 3: 0.3, 4: 0.5, 5: 0.7 };
+export const SOCKET_MAX_BY_RARITY: Record<number, number> = { 0: 0, 1: 0, 2: 1, 3: 2, 4: 2, 5: 3 };
+// Кол-во гнёзд на предмете (жёстко 3, как в типах GearWithRunes).
+export const GEAR_SOCKET_SLOTS = 3;
+/** Ролл гнёзд при генерации предмета: у серо-зелёных нет, у синих+ шанс по SOCKET_DROP_CHANCE. */
+export function rollSockets(rarity: number): number {
+  const chance = SOCKET_DROP_CHANCE[rarity] ?? 0;
+  if (chance <= 0 || Math.random() >= chance) return 0;
+  const max = SOCKET_MAX_BY_RARITY[rarity] ?? 1;
+  if (max <= 1) return 1;
+  if (rarity >= 5) {
+    if (Math.random() < 0.25) return 3;
+    if (Math.random() < 0.45) return 2;
+    return 1;
+  }
+  return Math.random() < 0.35 ? 2 : 1;
+}
+// Сверло: +1 гнездо на любой предмет (макс GEAR_SOCKET_SLOTS).
+export const SOCKET_DRILL_RECIPE: CraftRecipe = {
+  id: "c_drill", name: "Гнездовщик", icon: "🪛",
+  desc: "Сверло: +1 гнездо под руну на предмет (макс 3). Ролл решает судьбу.",
+  mats: [{ type: "ore", amount: 20 }, { type: "crystal", amount: 15 }, { type: "essence", amount: 5 }],
+  result: { kind: "drill", value: 1 },
+};
+
 /* ================= СЕТ БЕЗДНЫ (Портал) ================= */
 export const ABYSS_SET: Partial<Record<BaseSlot, { name: string; stats: Partial<Record<StatKey, number>> }>> = {
-  weapon: { name: "Коготь Пожирателя", stats: { dmg: 16, dmgPct: 14, crit: 6 } },
-  helm: { name: "Венец Пустоты", stats: { hp: 90, armor: 22, xpPct: 8 } },
-  amulet: { name: "Око Бездны", stats: { crit: 9, critDmg: 28, dmgPct: 10 } },
-  armor: { name: "Панцирь Отродья", stats: { armor: 30, hp: 120, regen: 1.4 } },
-  gloves: { name: "Когтистые перчатки Бездны", stats: { as: 12, crit: 6, dmgPct: 8 } },
-  boots: { name: "Поступь Тьмы", stats: { armor: 18, goldPct: 16, hp: 60 } },
-  ring: { name: "Печатка Отродья", stats: { critDmg: 24, luck: 10, dmgPct: 10 } },
+  weapon: { name: "Коготь Пожирателя", stats: { dmg: 26, dmgPct: 18, crit: 8, critDmg: 16 } },
+  helm: { name: "Венец Пустоты", stats: { hp: 150, armor: 32, xpPct: 10, hpPct: 6 } },
+  amulet: { name: "Око Бездны", stats: { crit: 12, critDmg: 36, dmgPct: 14, luck: 6 } },
+  armor: { name: "Панцирь Отродья", stats: { armor: 44, hp: 200, regen: 2, hpPct: 6 } },
+  gloves: { name: "Когтистые перчатки Бездны", stats: { as: 16, crit: 8, dmgPct: 12, critDmg: 14 } },
+  boots: { name: "Поступь Тьмы", stats: { armor: 28, goldPct: 20, hp: 100, xpPct: 8 } },
+  ring: { name: "Печатка Отродья", stats: { critDmg: 32, luck: 14, dmgPct: 14, goldPct: 12 } },
 };
 export const ABYSS_SET_BONUS = 3; // % урона и HP за каждую надетую вещь сета
 
@@ -240,6 +269,24 @@ export function rollRarity(min: number, luck: number): Rarity {
   return 4;
 }
 
+/**
+ * Шкала генерации: база × rarityMult × roll, но % статы растут с ilvl медленно
+ * (иначе фиол с высоким ilvl обгонял сет/бездну). Формула:
+ *   flat-статы: base(ilvl) полностью (dmg/hp/armor)
+ *   %-статы: base × (0.55 + 0.45 × ilvlFactor), где ilvlFactor = ilvl/(ilvl+60)
+ * + кап «синих» %(crit/gold/xp/luck/as/regen/dmgPct): только 1-2 ранг ×1.5,
+ *   чтобы белый мусор с 4 строками не забивал фиол/легенду.
+ */
+const scaledStatValue = (key: StatKey, ilvl: number, rarity: number): number => {
+  const base = statValue(key, ilvl);
+  const pctKeys: StatKey[] = ["crit", "dmgPct", "goldPct", "xpPct", "luck", "as", "regen"];
+  if (!pctKeys.includes(key)) return base;
+  const ilvlFactor = ilvl / (ilvl + 60);
+  const v = base * (0.55 + 0.45 * ilvlFactor);
+  if (rarity <= 1 && ["crit", "goldPct", "xpPct", "luck", "as", "regen", "dmgPct"].includes(key)) return v * 1.5;
+  return v;
+};
+
 export function genItem(ilvl: number, minRarity: number, classId: ClassId, luck: number, uid: number, forceBase?: BaseSlot): Item {
   const rarity = rollRarity(minRarity, luck);
   const base = forceBase ?? (Object.keys(SLOT_STATS) as BaseSlot[])[Math.floor(Math.random() * 7)];
@@ -252,7 +299,7 @@ export function genItem(ilvl: number, minRarity: number, classId: ClassId, luck:
     const si = pool.indexOf(sig);
     if (si >= 0) {
       pool.splice(si, 1);
-      let v = statValue(sig, ilvl) * rarityMult(rarity) * statRoll();
+      let v = scaledStatValue(sig, ilvl, rarity) * rarityMult(rarity) * statRoll();
       if (sig === "dmg" && base === "weapon") v *= classId === "mage" ? 1.25 : 0.9;
       stats[sig] = sig === "dmg" || sig === "hp" ? Math.round(v) : Math.round(v * 10) / 10;
     }
@@ -260,7 +307,7 @@ export function genItem(ilvl: number, minRarity: number, classId: ClassId, luck:
   while (Object.keys(stats).length < nStats && pool.length) {
     const idx = Math.floor(Math.random() * pool.length);
     const key = pool.splice(idx, 1)[0];
-    let v = statValue(key, ilvl) * rarityMult(rarity) * statRoll();
+    let v = scaledStatValue(key, ilvl, rarity) * rarityMult(rarity) * statRoll();
     if (key === "dmg" && base === "weapon") v *= classId === "mage" ? 1.25 : 0.9;
     stats[key] = key === "dmg" || key === "hp" ? Math.round(v) : Math.round(v * 10) / 10;
   }
@@ -272,7 +319,8 @@ export function genItem(ilvl: number, minRarity: number, classId: ClassId, luck:
     if (classId === "archer") name = name.replace(/^(\w+)\s(посох|жезл|молот)/i, "$1 лук");
   }
   const sell = Math.round(Math.pow(rarity + 1, 2.1) * 9 + ilvl * 1.4);
-  return { uid, base, name, rarity, ilvl, stats, sell };
+  const sockets = rollSockets(rarity);
+  return { uid, base, name, rarity, ilvl, stats, sell, ...(sockets > 0 ? { sockets } : {}) };
 }
 
 export const INV_CAP = 40;
@@ -378,92 +426,92 @@ export interface SetDef {
 export const SETS: SetDef[] = [
   {
     id: "dawn", name: "Рассвет Аркана", path: "arcan", tier: 1, color: "#4cc3ff", icon: "star",
-    pieces: ["weapon", "helm", "amulet", "armor", "ring"], bias: ["dmgPct", "crit", "xpPct"],
+    pieces: ["weapon", "helm", "amulet", "armor", "ring"], bias: ["dmgPct", "crit", "xpPct", "critDmg"],
     bonuses: [
-      { need: 2, mods: { dmgPct: 8 } },
-      { need: 3, mods: { crit: 5, xpPct: 8 } },
-      { need: 5, mods: { dmgPct: 14, critDmg: 22 } },
+      { need: 2, mods: { dmgPct: 6 } },
+      { need: 3, mods: { crit: 3, xpPct: 5 } },
+      { need: 5, mods: { dmgPct: 10, critDmg: 14 } },
     ],
   },
   {
     id: "huntset", name: "Дикая Охота", path: "hunt", tier: 1, color: "#4ade80", icon: "arrows",
-    pieces: ["weapon", "gloves", "boots", "helm", "ring"], bias: ["as", "crit", "dmgPct"],
+    pieces: ["weapon", "gloves", "boots", "helm", "ring"], bias: ["as", "crit", "dmgPct", "critDmg"],
     bonuses: [
-      { need: 2, mods: { as: 8 } },
-      { need: 3, mods: { crit: 6, dmgPct: 6 } },
-      { need: 5, mods: { as: 10, critDmg: 20 } },
+      { need: 2, mods: { as: 6 } },
+      { need: 3, mods: { crit: 4, dmgPct: 4 } },
+      { need: 5, mods: { as: 8, critDmg: 12 } },
     ],
   },
   {
     id: "grave", name: "Хранитель Могил", path: "curse", tier: 2, color: "#c084fc", icon: "skull",
-    pieces: ["weapon", "helm", "armor", "amulet", "boots"], bias: ["critDmg", "crit", "dmgPct"],
+    pieces: ["weapon", "helm", "armor", "amulet", "boots"], bias: ["critDmg", "crit", "dmgPct", "armor"],
     bonuses: [
-      { need: 2, mods: { critDmg: 18 } },
-      { need: 3, mods: { crit: 6, dmgPct: 8 } },
-      { need: 5, mods: { critDmg: 30, dmgPct: 12 } },
+      { need: 2, mods: { critDmg: 12 } },
+      { need: 3, mods: { crit: 4, dmgPct: 5 } },
+      { need: 5, mods: { critDmg: 18, dmgPct: 8 } },
     ],
   },
   {
     id: "rabbit", name: "Лапа Кролика", path: "beast", tier: 2, color: "#f0b429", icon: "clover",
-    pieces: ["gloves", "boots", "amulet", "ring", "helm"], bias: ["luck", "goldPct", "xpPct"],
+    pieces: ["gloves", "boots", "amulet", "ring", "helm"], bias: ["luck", "goldPct", "xpPct", "crit"],
     bonuses: [
-      { need: 2, mods: { luck: 15 } },
-      { need: 3, mods: { goldPct: 14, xpPct: 8 } },
-      { need: 5, mods: { luck: 25, goldPct: 16 } },
+      { need: 2, mods: { luck: 10 } },
+      { need: 3, mods: { goldPct: 8, xpPct: 5 } },
+      { need: 5, mods: { luck: 16, goldPct: 10 } },
     ],
   },
   {
     id: "feast", name: "Кровавый Пир", path: "flesh", tier: 3, color: "#ff6b8d", icon: "fang",
-    pieces: ["weapon", "armor", "gloves", "ring", "amulet"], bias: ["hp", "dmgPct", "armor"],
+    pieces: ["weapon", "armor", "gloves", "ring", "amulet"], bias: ["hp", "dmgPct", "armor", "hpPct"],
     bonuses: [
-      { need: 2, mods: { hpPct: 12 } },
-      { need: 3, mods: { dmgPct: 10, regen: 0.8 } },
-      { need: 5, mods: { hpPct: 18, dmgPct: 14 } },
+      { need: 2, mods: { hpPct: 8 } },
+      { need: 3, mods: { dmgPct: 7, regen: 0.6 } },
+      { need: 5, mods: { hpPct: 12, dmgPct: 10 } },
     ],
   },
   {
     id: "idol", name: "Золотой Идол", path: null, tier: 3, color: "#ffd166", icon: "coin",
-    pieces: ["amulet", "ring", "boots", "helm"], bias: ["goldPct", "luck", "xpPct"],
+    pieces: ["amulet", "ring", "boots", "helm"], bias: ["goldPct", "luck", "xpPct", "crit"],
     bonuses: [
-      { need: 2, mods: { goldPct: 18 } },
-      { need: 3, mods: { luck: 18, xpPct: 8 } },
-      { need: 4, mods: { goldPct: 26, luck: 20 } },
+      { need: 2, mods: { goldPct: 10 } },
+      { need: 3, mods: { luck: 12, xpPct: 5 } },
+      { need: 4, mods: { goldPct: 16, luck: 14 } },
     ],
   },
   {
     id: "starweave", name: "Звёздный Ткач", path: "arcan", tier: 4, color: "#7ee8d6", icon: "spark",
-    pieces: ["weapon", "amulet", "ring", "helm", "armor", "boots"], bias: ["xpPct", "dmgPct", "crit"],
+    pieces: ["weapon", "amulet", "ring", "helm", "armor", "boots"], bias: ["xpPct", "dmgPct", "crit", "critDmg"],
     bonuses: [
-      { need: 2, mods: { xpPct: 14 } },
-      { need: 4, mods: { dmgPct: 12, crit: 6 } },
-      { need: 6, mods: { xpPct: 20, dmgPct: 16, critDmg: 24 } },
+      { need: 2, mods: { xpPct: 9 } },
+      { need: 4, mods: { dmgPct: 8, crit: 4 } },
+      { need: 6, mods: { xpPct: 14, dmgPct: 11, critDmg: 15 } },
     ],
   },
   {
     id: "bonecrown", name: "Костяная Корона", path: "curse", tier: 4, color: "#e8e2d0", icon: "crown",
-    pieces: ["helm", "armor", "weapon", "gloves", "ring"], bias: ["crit", "armor", "hp"],
+    pieces: ["helm", "armor", "weapon", "gloves", "ring"], bias: ["crit", "armor", "hp", "hpPct"],
     bonuses: [
-      { need: 2, mods: { armor: 30 } },
-      { need: 3, mods: { crit: 8, hpPct: 8 } },
-      { need: 5, mods: { critDmg: 26, armor: 40, hpPct: 10 } },
+      { need: 2, mods: { armor: 20 } },
+      { need: 3, mods: { crit: 5, hpPct: 6 } },
+      { need: 5, mods: { critDmg: 16, armor: 26, hpPct: 8 } },
     ],
   },
   {
     id: "ironoath", name: "Железная Клятва", path: "flesh", tier: 2, color: "#9aa4b2", icon: "shield",
-    pieces: ["armor", "helm", "gloves", "boots"], bias: ["armor", "hp", "regen"],
+    pieces: ["armor", "helm", "gloves", "boots"], bias: ["armor", "hp", "regen", "hpPct"],
     bonuses: [
-      { need: 2, mods: { armor: 24 } },
-      { need: 3, mods: { hpPct: 10, regen: 0.6 } },
-      { need: 4, mods: { armor: 36, hpPct: 12 } },
+      { need: 2, mods: { armor: 16 } },
+      { need: 3, mods: { hpPct: 6, regen: 0.4 } },
+      { need: 4, mods: { armor: 24, hpPct: 8 } },
     ],
   },
   {
     id: "wildfang", name: "Клык Пустоши", path: "hunt", tier: 3, color: "#e0a34e", icon: "fang",
-    pieces: ["weapon", "gloves", "boots", "ring"], bias: ["dmg", "as", "critDmg"],
+    pieces: ["weapon", "gloves", "boots", "ring"], bias: ["dmg", "as", "critDmg", "crit"],
     bonuses: [
-      { need: 2, mods: { dmgPct: 9 } },
-      { need: 3, mods: { as: 9, crit: 5 } },
-      { need: 4, mods: { dmgPct: 14, critDmg: 24 } },
+      { need: 2, mods: { dmgPct: 6 } },
+      { need: 3, mods: { as: 6, crit: 3 } },
+      { need: 4, mods: { dmgPct: 10, critDmg: 15 } },
     ],
   },
 ];
@@ -640,7 +688,7 @@ export const ZONE_RESOURCES: Record<number, string[]> = {
 export interface CraftRecipe {
   id: string; name: string; icon: string; desc: string;
   mats: { type: string; amount: number }[];
-  result: { kind: "potion" | "gold" | "gem" | "item" | "stone"; value?: number; minRarity?: number; ilvlBonus?: number };
+  result: { kind: "potion" | "gold" | "gem" | "item" | "stone" | "rune" | "drill"; value?: number; minRarity?: number; ilvlBonus?: number };
 }
 export const CRAFT_RECIPES: CraftRecipe[] = [
   { id: "c_potion", name: "Настой бодрости", icon: "🧪", desc: "Сварить 1 зелье (45% HP)", mats: [{ type: "herb", amount: 5 }], result: { kind: "potion", value: 1 } },
@@ -652,7 +700,57 @@ export const CRAFT_RECIPES: CraftRecipe[] = [
   { id: "c_gem", name: "Кристальная крошка", icon: "💎", desc: "Выжать 5 кристаллов из самоцветов", mats: [{ type: "gem", amount: 10 }, { type: "crystal", amount: 10 }], result: { kind: "gem", value: 5 } },
   { id: "c_item", name: "Кузня предков", icon: "⚒️", desc: "Выковать предмет (редкий+) под выбранный слот", mats: [{ type: "ore", amount: 25 }, { type: "crystal", amount: 15 }, { type: "essence", amount: 10 }], result: { kind: "item", minRarity: 2, ilvlBonus: 5 } },
   { id: "c_legend", name: "Легендарная кузня", icon: "⚔️", desc: "Гарантированно выковать легендарный предмет под выбранный слот", mats: [{ type: "gem", amount: 20 }, { type: "darkmatter", amount: 15 }, { type: "essence", amount: 20 }], result: { kind: "item", minRarity: 4, ilvlBonus: 8 } },
+  SOCKET_DRILL_RECIPE,
 ];
+
+/* ================= ЭКСПЕДИЦИЯ (эндгейм под руны) ================= */
+// Аналог глубин Портала, но «ключом» служат скрафченные руны.
+// Тир руны = уровень этапа: растут монстры, награды и шанс Крови Демона.
+export const EXPEDITION_MAX_TIER = 8;
+
+export interface ExpeditionTierDef {
+  tier: number;
+  roman: string;
+  resourceZone: number; // чьи ресурсы капают с боссов этапа (индекс зоны)
+  runeCost: { type: string; amount: number }[]; // цена крафта руны этого тира
+}
+
+export const EXPEDITION_TIERS: ExpeditionTierDef[] = [
+  { tier: 1, roman: "I", resourceZone: 0, runeCost: [{ type: "wood", amount: 25 }, { type: "leather", amount: 15 }, { type: "herb", amount: 10 }] },
+  { tier: 2, roman: "II", resourceZone: 1, runeCost: [{ type: "ore", amount: 30 }, { type: "bone", amount: 20 }, { type: "crystal", amount: 12 }] },
+  { tier: 3, roman: "III", resourceZone: 2, runeCost: [{ type: "herb", amount: 40 }, { type: "leather", amount: 30 }, { type: "essence", amount: 15 }] },
+  { tier: 4, roman: "IV", resourceZone: 3, runeCost: [{ type: "crystal", amount: 45 }, { type: "gem", amount: 25 }, { type: "essence", amount: 20 }] },
+  { tier: 5, roman: "V", resourceZone: 4, runeCost: [{ type: "darkmatter", amount: 40 }, { type: "voidshard", amount: 25 }, { type: "essence", amount: 30 }] },
+  { tier: 6, roman: "VI", resourceZone: 5, runeCost: [{ type: "essence", amount: 60 }, { type: "gem", amount: 40 }, { type: "crystal", amount: 45 }] },
+  { tier: 7, roman: "VII", resourceZone: 6, runeCost: [{ type: "bone", amount: 75 }, { type: "herb", amount: 60 }, { type: "wood", amount: 50 }] },
+  { tier: 8, roman: "VIII", resourceZone: 8, runeCost: [{ type: "ore", amount: 90 }, { type: "crystal", amount: 70 }, { type: "darkmatter", amount: 55 }] },
+];
+
+export const expeditionDef = (tier: number): ExpeditionTierDef =>
+  EXPEDITION_TIERS[Math.min(Math.max(1, tier), EXPEDITION_MAX_TIER) - 1] ?? EXPEDITION_TIERS[0];
+
+// Сила монстров и щедрость наград этапа.
+export const expeditionHpMult = (tier: number) => Math.pow(1.6, Math.max(0, tier - 1));
+export const expeditionDmgMult = (tier: number) => Math.pow(1.4, Math.max(0, tier - 1));
+export const expeditionGoldMult = (tier: number) => 1 + 0.4 * Math.max(0, tier - 1);
+export const expeditionXpMult = (tier: number) => 1 + 0.25 * Math.max(0, tier - 1);
+export const expeditionShardMult = (tier: number) => 1 + 0.35 * Math.max(0, tier - 1);
+export const expeditionBloodChance = (tier: number) => 0.05 + 0.015 * Math.max(0, tier - 1);
+
+// Руна высокого тира сильнее и в билде (статы руны в шмоте).
+export const RUNE_TIER_STAT_MULT = (tier: number) => 1 + 0.25 * Math.max(0, tier - 1);
+// XP питомцу за босса этапа: связка «эндгейм → питомцы».
+export const expeditionPetXp = (tier: number) => 25 * Math.max(1, tier);
+
+// Руны экспедиции: ключи к этапам эндгейма. Руна тира T = пропуск на этап T.
+export const EXPEDITION_RUNE_RECIPES: CraftRecipe[] = EXPEDITION_TIERS.map(t => ({
+  id: `c_rune_t${t.tier}`,
+  name: `Руна экспедиции ${t.roman}`,
+  icon: "ᚱ",
+  desc: `Ключ к этапу ${t.roman}. В шмоте даёт +${25 * (t.tier - 1)}% к статам руны`,
+  mats: t.runeCost,
+  result: { kind: "rune" as const, value: t.tier },
+}));
 
 /* ================= РОГАЛИК: ДАРЫ БЕЗДНЫ ================= */
 export interface RelicDef {
@@ -664,19 +762,19 @@ export interface RelicDef {
   skillLvl?: number; bossGold?: number;
 }
 export const RELICS: RelicDef[] = [
-  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 25, desc: (r) => `+${r * 25}% к урону` },
-  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 18, desc: (r) => `+${r * 18}% к скорости атаки` },
-  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 12, desc: (r) => `+${r * 12}% к критическому удару` },
-  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 30, desc: (r) => `+${r * 30}% к HP` },
-  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 25, desc: (r) => `+${r * 25}% к удаче` },
-  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 35, desc: (r) => `+${r * 35}% к золоту` },
-  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 30, desc: (r) => `+${r * 30}% к опыту` },
-  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 8, desc: (r) => `+${r * 8}% вампиризма` },
-  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 60, desc: (r) => `+${r * 60} отражённого урона` },
-  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 40, desc: (r) => `+${r * 40}% к критическому урону` },
-  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1, desc: (r) => `+${r} уровень всем навыкам` },
-  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1, desc: (r) => `+${r} ударов по боссу для золота` },
-  { id: "cursed", name: "Проклятая сила", icon: "skull", max: 1, cursed: true, dmgPct: 60, hpPct: -25, desc: () => `+60% урона, но −25% макс. HP. Оно того стоит?` },
+  { id: "fang", name: "Клык ярости", icon: "fang", max: 3, dmgPct: 8, desc: r => `+${r * 8}% к урону` },
+  { id: "feather", name: "Перо сокола", icon: "feather", max: 3, as: 8, desc: r => `+${r * 8}% к скорости атаки` },
+  { id: "eye", name: "Глаз снайпера", icon: "target", max: 3, crit: 8, desc: r => `+${r * 8}% к шансу крита` },
+  { id: "heart2", name: "Бычье сердце", icon: "heart", max: 3, hpPct: 8, desc: r => `+${r * 8}% к макс. HP` },
+  { id: "clover2", name: "Клевер гоблина", icon: "clover", max: 3, luck: 10, desc: r => `+${r * 10} к удаче` },
+  { id: "magnet", name: "Монетный магнит", icon: "coin", max: 3, goldPct: 10, desc: r => `+${r * 10}% к золоту` },
+  { id: "crystal", name: "Кристалл мудрости", icon: "star", max: 3, xpPct: 10, desc: r => `+${r * 10}% к опыту` },
+  { id: "blood", name: "Кровавый клык", icon: "venom", max: 3, lifesteal: 5, desc: r => `Вампиризм +${r * 5}%` },
+  { id: "thorn", name: "Шипастая броня", icon: "thorn", max: 3, thorns: 30, desc: r => `Отражает удар на +${r * 30}% вашего урона` },
+  { id: "focus", name: "Смертельный фокус", icon: "bolt", max: 3, critDmg: 20, desc: r => `+${r * 20}% к силе крита` },
+  { id: "gambit", name: "Азарт бездны", icon: "spark", max: 2, skillLvl: 1, desc: r => `Уровень всех боевых скиллов +${r}` },
+  { id: "idol", name: "Жадный идол", icon: "crown", max: 2, bossGold: 1, desc: r => `Золото с боссов ×${1 + r}` },
+  { id: "cursed", name: "Проклятая сила", icon: "skull", max: 1, cursed: true, dmgPct: 20, hpPct: -10, desc: () => `+20% урона, но −10% макс. HP. Оно того стоит?` },
 ];
 
 /* ================= РОГАЛИК: АЛТАРЬ (МЕТА) ================= */
@@ -686,11 +784,11 @@ export interface MetaDef {
   dmgPct?: number; hpPct?: number; goldPct?: number; luck?: number; xpPct?: number; headstart?: number;
 }
 export const META: MetaDef[] = [
-  { id: "temper", name: "Закалка", icon: "sword", max: 10, cost: r => 25 * (r + 1), dmgPct: 5, desc: r => `+${r * 5}% к урону` },
-  { id: "hide", name: "Шкура носорога", icon: "shield", max: 10, cost: r => 25 * (r + 1), hpPct: 6, desc: r => `+${r * 6}% к HP` },
-  { id: "hunch", name: "Предчувствие", icon: "clover", max: 10, cost: r => 20 * (r + 1), luck: 6, desc: r => `+${r * 6} к удаче` },
-  { id: "greed", name: "Алчность", icon: "coin", max: 10, cost: r => 20 * (r + 1), goldPct: 10, desc: r => `+${r * 10}% к золоту` },
-  { id: "savant", name: "Мудрец", icon: "book", max: 10, cost: r => 20 * (r + 1), xpPct: 8, desc: r => `+${r * 8}% к опыту` },
+    { id: "temper", name: "Закалка", icon: "sword", max: 10, cost: r => 25 * (r + 1), dmgPct: 3, desc: r => `+${r * 3}% к урону` },
+  { id: "hide", name: "Шкура носорога", icon: "shield", max: 10, cost: r => 25 * (r + 1), hpPct: 2, desc: r => `+${r * 2}% к HP` },
+  { id: "hunch", name: "Предчувствие", icon: "clover", max: 10, cost: r => 20 * (r + 1), luck: 2, desc: r => `+${r * 2} к удаче` },
+  { id: "greed", name: "Алчность", icon: "coin", max: 10, cost: r => 20 * (r + 1), goldPct: 3, desc: r => `+${r * 3}% к золоту` },
+  { id: "savant", name: "Мудрец", icon: "book", max: 10, cost: r => 20 * (r + 1), xpPct: 2, desc: r => `+${r * 2}% к опыту` },
   { id: "headstart", name: "Фора", icon: "spark", max: 3, cost: r => 60 * (r + 1), headstart: 1, desc: r => `+${r} случайный дар в начале забега` },
 ];
 
@@ -707,30 +805,30 @@ export interface VipDef {
   perks: string[];
 }
 export const VIP_LEVELS: VipDef[] = [
-  {
+    {
     name: "Бронза", color: "#cd7f32", cost: 150,
-    goldPct: 10, xpPct: 5, luck: 0, dmgPct: 0, hpPct: 0, offlinePct: 0, respawn: 2.5,
-    perks: ["+10% золото", "+5% опыт", "Воскрешение за 2.5 с"],
+    goldPct: 7, xpPct: 3, luck: 0, dmgPct: 0, hpPct: 0, offlinePct: 0, respawn: 2.5,
+    perks: ["+7% золото", "+3% опыт", "Воскрешение за 2.5 с"],
   },
   {
     name: "Серебро", color: "#c9d4de", cost: 400,
-    goldPct: 18, xpPct: 10, luck: 10, dmgPct: 0, hpPct: 0, offlinePct: 12, respawn: 2,
-    perks: ["+18% золото", "+10% опыт", "+10 удача", "+12% офлайн-доход", "Воскрешение за 2 с"],
+    goldPct: 12, xpPct: 7, luck: 7, dmgPct: 0, hpPct: 0, offlinePct: 8, respawn: 2,
+    perks: ["+12% золото", "+7% опыт", "+7 удача", "+8% офлайн-доход", "Воскрешение за 2 с"],
   },
   {
     name: "Золото", color: "#f0b429", cost: 900,
-    goldPct: 28, xpPct: 15, luck: 18, dmgPct: 10, hpPct: 10, offlinePct: 25, respawn: 1.5,
-    perks: ["+28% золото", "+15% опыт", "+18 удача", "+10% урон", "+10% HP", "Воскрешение за 1.5 с"],
+    goldPct: 18, xpPct: 10, luck: 12, dmgPct: 7, hpPct: 7, offlinePct: 17, respawn: 1.5,
+    perks: ["+18% золото", "+10% опыт", "+12 удача", "+7% урон", "+7% HP", "Воскрешение за 1.5 с"],
   },
   {
     name: "Платина", color: "#9fd8e8", cost: 2000,
-    goldPct: 40, xpPct: 22, luck: 28, dmgPct: 18, hpPct: 15, offlinePct: 40, respawn: 1,
-    perks: ["+40% золото", "+22% опыт", "+28 удача", "+18% урон", "+15% HP", "Воскрешение за 1 с"],
+    goldPct: 27, xpPct: 15, luck: 19, dmgPct: 12, hpPct: 10, offlinePct: 27, respawn: 1,
+    perks: ["+27% золото", "+15% опыт", "+19 удача", "+12% урон", "+10% HP", "Воскрешение за 1 с"],
   },
   {
     name: "Бездна", color: "#c084fc", cost: 4500,
-    goldPct: 60, xpPct: 30, luck: 40, dmgPct: 30, hpPct: 25, offlinePct: 60, respawn: 0.5,
-    perks: ["+60% золото", "+30% опыт", "+40 удача", "+30% урон", "+25% HP", "Воскрешение за 0.5 с"],
+    goldPct: 40, xpPct: 20, luck: 27, dmgPct: 20, hpPct: 17, offlinePct: 40, respawn: 0.5,
+    perks: ["+40% золото", "+20% опыт", "+27 удача", "+20% урон", "+17% HP", "Воскрешение за 0.5 с"],
   },
 ];
 
@@ -870,25 +968,25 @@ export function activeSeasonalEvent(now = Date.now()): SeasonalEventDef | null {
 export const PRESTIGE_CONFIG = {
   minZone: 15, // минимальная зона для первого престижа
   essencePerZone: 2, // эссенции за зону при сбросе
-  baseBonusPct: 5, // базовый бонус к урону/HP за престиж
+  baseBonusPct: 3, // базовый бонус к урону/HP за престиж
   talentPointsPerPrestige: 3, // очков талантов за престиж
 };
 
 export const PRESTIGE_BONUSES = [
-  { id: "dmgPct", name: "Сила Бездны", icon: "sword", desc: "+5% урона", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 5, description: "+5% урона" },
-  { id: "hpPct", name: "Плоть Бездны", icon: "heart", desc: "+5% HP", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 5, description: "+5% HP" },
-  { id: "goldPct", name: "Жадность Бездны", icon: "coin", desc: "+3% золота", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 3, description: "+3% золота" },
-  { id: "xpPct", name: "Мудрость Бездны", icon: "book", desc: "+3% опыта", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 3, description: "+3% опыта" },
+    { id: "dmgPct", name: "Сила Бездны", icon: "sword", desc: "+2% урона", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 2, description: "+2% урона" },
+  { id: "hpPct", name: "Плоть Бездны", icon: "heart", desc: "+2% HP", costBase: 1, costMult: 1.5, baseCost: 1, maxLevel: 10, valuePerLevel: 2, description: "+2% HP" },
+  { id: "goldPct", name: "Жадность Бездны", icon: "coin", desc: "+1% золота", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 1, description: "+1% золота" },
+  { id: "xpPct", name: "Мудрость Бездны", icon: "book", desc: "+1% опыта", costBase: 2, costMult: 1.6, baseCost: 2, maxLevel: 10, valuePerLevel: 1, description: "+1% опыта" },
   { id: "crit", name: "Точность Бездны", icon: "target", desc: "+1% крита", costBase: 3, costMult: 1.7, baseCost: 3, maxLevel: 10, valuePerLevel: 1, description: "+1% крита" },
-  { id: "critDmg", name: "Ярость Бездны", icon: "skull", desc: "+2% крит. урона", costBase: 3, costMult: 1.7, baseCost: 3, maxLevel: 10, valuePerLevel: 2, description: "+2% крит. урона" },
+  { id: "critDmg", name: "Ярость Бездны", icon: "skull", desc: "+1.5% крит. урона", costBase: 3, costMult: 1.7, baseCost: 3, maxLevel: 10, valuePerLevel: 1.5, description: "+1.5% крит. урона" },
 ];
 
 export const PRESTIGE_TALENTS = [
-  { id: "essence_boost", name: "Собиратель сущности", icon: "gem", max: 5, costBase: 1, cost: 50, minPrestiges: 0, description: "+10% к получению эссенции" },
+    { id: "essence_boost", name: "Собиратель сущности", icon: "gem", max: 5, costBase: 1, cost: 50, minPrestiges: 0, description: "+2% к получению эссенции" },
   { id: "auto_potion", name: "Авто-зелье", icon: "flask", max: 3, costBase: 2, cost: 100, minPrestiges: 0, description: "Авто-использование зелья" },
-  { id: "luck_prestige", name: "Удача избранного", icon: "clover", max: 5, costBase: 2, cost: 80, minPrestiges: 1, description: "+2% удачи" },
-  { id: "boss_damage", name: "Охотник на боссов", icon: "crown", max: 5, costBase: 3, cost: 150, minPrestiges: 2, description: "+5% урона по боссам" },
-  { id: "offline_essence", name: "Эссенция офлайн", icon: "clock", max: 3, costBase: 4, cost: 200, minPrestiges: 3, description: "+20% эссенции офлайн" },
+  { id: "luck_prestige", name: "Удача избранного", icon: "clover", max: 5, costBase: 2, cost: 80, minPrestiges: 1, description: "+1% удачи" },
+  { id: "boss_damage", name: "Охотник на боссов", icon: "crown", max: 5, costBase: 3, cost: 150, minPrestiges: 2, description: "+2% урона по боссам" },
+  { id: "offline_essence", name: "Эссенция офлайн", icon: "clock", max: 3, costBase: 4, cost: 200, minPrestiges: 3, description: "+8% эссенции офлайн" },
 ];
 
 /* ================= БЕСТИАРИЙ ================= */
@@ -896,8 +994,8 @@ export const BESTIARY_BONUSES = [
   { threshold: 5, bonus: { dmgPct: 1 }, desc: "+1% урона за 5 уникальных монстров" },
   { threshold: 10, bonus: { hpPct: 2 }, desc: "+2% HP за 10 уникальных монстров" },
   { threshold: 15, bonus: { crit: 2 }, desc: "+2% крита за 15 уникальных монстров" },
-  { threshold: 20, bonus: { goldPct: 5 }, desc: "+5% золота за 20 уникальных монстров" },
-  { threshold: 25, bonus: { xpPct: 5 }, desc: "+5% опыта за 25 уникальных монстров" },
+    { threshold: 20, bonus: { goldPct: 3 }, desc: "+3% золота за 20 уникальных монстров" },
+  { threshold: 25, bonus: { xpPct: 3 }, desc: "+3% опыта за 25 уникальных монстров" },
 ];
 
 /* ================= BATTLE PASS ================= */
@@ -1060,12 +1158,22 @@ const PET_SVGS: Record<string, string> = {
 };
 
 export const PETS: PetDef[] = [
-  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2 as Rarity, passiveBonus: { dmgPct: 3 }, free: true, bonusDescription: "+3% к урону", levelUpCost: 20, unlockLevel: 10, svg: PET_SVGS.imp },
-  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3 as Rarity, passiveBonus: { xpPct: 8 }, autoLoot: true, free: false, bonusDescription: "+8% к опыту", levelUpCost: 30, unlockLevel: 20, svg: PET_SVGS.wisp },
-  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3 as Rarity, passiveBonus: { hpPct: 10, armor: 15 }, free: false, bonusDescription: "+10% HP, +15% броня", levelUpCost: 40, unlockLevel: 25, svg: PET_SVGS.golem },
-  { id: "raven", name: "Ворон", icon: "raven", rarity: 4 as Rarity, passiveBonus: { crit: 5, critDmg: 10 }, free: false, bonusDescription: "+5% крита, +10% крит. урона", levelUpCost: 60, unlockLevel: 35, svg: PET_SVGS.raven },
-  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5 as Rarity, passiveBonus: { dmgPct: 8, hpPct: 8 }, lifesteal: 3, free: false, bonusDescription: "+8% урона, +8% HP, душегуб", levelUpCost: 100, unlockLevel: 50, svg: PET_SVGS.dragon_whelp },
+  { id: "imp", name: "Бесёнок", icon: "imp", rarity: 2 as Rarity, passiveBonus: { dmgPct: 1.5 }, free: true, bonusDescription: "+1.5% к урону (макс ⭐5)", levelUpCost: 20, unlockLevel: 10, svg: PET_SVGS.imp },
+  { id: "wisp", name: "Огонёк", icon: "wisp", rarity: 3 as Rarity, passiveBonus: { xpPct: 3 }, autoLoot: true, free: false, bonusDescription: "+3% к опыту, автолут (макс ⭐5)", levelUpCost: 30, unlockLevel: 20, svg: PET_SVGS.wisp },
+  { id: "golem", name: "Каменный голем", icon: "golem", rarity: 3 as Rarity, passiveBonus: { hpPct: 4, armor: 5 }, free: false, bonusDescription: "+4% HP, +5 брони (макс ⭐5)", levelUpCost: 40, unlockLevel: 25, svg: PET_SVGS.golem },
+  { id: "raven", name: "Ворон", icon: "raven", rarity: 4 as Rarity, passiveBonus: { crit: 2, critDmg: 5 }, free: false, bonusDescription: "+2% крита, +5% крит. урона (макс ⭐5)", levelUpCost: 60, unlockLevel: 35, svg: PET_SVGS.raven },
+  { id: "dragon_whelp", name: "Детёныш дракона", icon: "dragon", rarity: 5 as Rarity, passiveBonus: { dmgPct: 3, hpPct: 3 }, lifesteal: 1, free: false, bonusDescription: "+3% урона, +3% HP, душегуб (макс ⭐5)", levelUpCost: 100, unlockLevel: 50, svg: PET_SVGS.dragon_whelp },
 ];
+
+/** Прокачка питомца: уровень ×2.5% (кап ×1.5 на 20), звёзды +25% каждая (макс ⭐5 = ×2.75 суммарно). */
+export const PET_LEVEL_GROWTH = 0.025;
+export const PET_LEVEL_CAP = 20;
+export const PET_STAR_CAP = 5;
+export const petLevelMult = (_level: number) => 1; // legacy: заменено petPowerMult(level, stars)
+export const petPowerMult = (level: number, stars: number) =>
+  Math.min(1.5, 1 + (Math.min(Math.max(1, level), PET_LEVEL_CAP) - 1) * PET_LEVEL_GROWTH) * (1 + Math.min(Math.max(0, stars), PET_STAR_CAP) * 0.25);
+/** Звёзды: кормление дубликатом расходки питомца (эссенция/кровь/осколки) — цена растёт со звёздами. */
+export const petStarCost = (stars: number) => ({ essence: 20 * (stars + 1), blood: 2 * (stars + 1) });
 
 /* ================= РУНЫ ================= */
 export interface RuneDef {
@@ -1079,20 +1187,20 @@ export interface RuneDef {
 }
 
 export const RUNES: RuneDef[] = [
-  { id: "rune_fire", name: "Руна Огня", icon: "flame", color: "#ff6b3d", stats: { dmgPct: 3 }, description: "+3% к урону" },
-  { id: "rune_ice", name: "Руна Льда", icon: "snow", color: "#4cc3ff", stats: { armor: 8, regen: 0.5 }, description: "+8% брони, +0.5 регенерации" },
-  { id: "rune_shadow", name: "Руна Тени", icon: "skull", color: "#9b7bd8", stats: { crit: 2, critDmg: 8 }, description: "+2% крита, +8% крит. урона" },
-  { id: "rune_life", name: "Руна Жизни", icon: "heart", color: "#4ade80", stats: { hpPct: 4, regen: 0.8 }, description: "+4% HP, +0.8 регенерации" },
-  { id: "rune_gold", name: "Руна Богатства", icon: "coin", color: "#f0b429", stats: { goldPct: 6 }, description: "+6% к золоту" },
-  { id: "rune_xp", name: "Руна Знаний", icon: "book", color: "#38bdf8", stats: { xpPct: 6 }, description: "+6% к опыту" },
-  { id: "rune_luck", name: "Руна Удачи", icon: "clover", color: "#8ee06e", stats: { luck: 8 }, description: "+8% к удаче" },
-  { id: "rune_as", name: "Руна Скорости", icon: "bolt", color: "#fbbf24", stats: { as: 8 }, description: "+8% к скорости атаки" },
+  { id: "rune_fire", name: "Руна Огня", icon: "flame", color: "#ff6b3d", stats: { dmgPct: 4 }, description: "+4% к урону (тир ×1.25)" },
+  { id: "rune_ice", name: "Руна Льда", icon: "snow", color: "#4cc3ff", stats: { armor: 8, regen: 0.6 }, description: "+8 брони, +0.6 регенерации (тир ×1.25)" },
+  { id: "rune_shadow", name: "Руна Тени", icon: "skull", color: "#9b7bd8", stats: { crit: 2, critDmg: 8 }, description: "+2% крита, +8% крит. урона (тир ×1.25)" },
+  { id: "rune_life", name: "Руна Жизни", icon: "heart", color: "#4ade80", stats: { hpPct: 5, regen: 0.8 }, description: "+5% HP, +0.8 регенерации (тир ×1.25)" },
+  { id: "rune_gold", name: "Руна Богатства", icon: "coin", color: "#f0b429", stats: { goldPct: 6 }, description: "+6% к золоту (тир ×1.25)" },
+  { id: "rune_xp", name: "Руна Знаний", icon: "book", color: "#38bdf8", stats: { xpPct: 6 }, description: "+6% к опыту (тир ×1.25)" },
+  { id: "rune_luck", name: "Руна Удачи", icon: "clover", color: "#8ee06e", stats: { luck: 8 }, description: "+8 к удаче (тир ×1.25)" },
+  { id: "rune_as", name: "Руна Скорости", icon: "bolt", color: "#fbbf24", stats: { as: 6 }, description: "+6% к скорости атаки (тир ×1.25)" },
 ];
 
 export const RUNE_SETS = [
-  { name: "Огненный шторм", runes: ["rune_fire", "rune_fire", "rune_shadow"], bonus: { dmgPct: 15, dotPct: 0.5 } },
-  { name: "Ледяная крепость", runes: ["rune_ice", "rune_ice", "rune_life"], bonus: { armor: 50, regen: 2 } },
-  { name: "Золотая лихорадка", runes: ["rune_gold", "rune_luck", "rune_xp"], bonus: { goldPct: 20, xpPct: 15 } },
+  { name: "Огненный шторм", runes: ["rune_fire", "rune_fire", "rune_shadow"], bonus: { dmgPct: 8, dotPct: 0.3 } },
+  { name: "Ледяная крепость", runes: ["rune_ice", "rune_ice", "rune_life"], bonus: { armor: 30, regen: 1.2 } },
+  { name: "Золотая лихорадка", runes: ["rune_gold", "rune_luck", "rune_xp"], bonus: { goldPct: 10, xpPct: 8 } },
 ];
 
 /* ================= BASE BUILDINGS ================= */
@@ -1149,14 +1257,26 @@ export const GUILD_BOSS_CONFIG = {
   maxParticipants: 30,
   damageRewardRatio: 0.001,
   minDamageForReward: 1000,
+  bossAttackInterval: 5, // секунд между ударами босса
+  playerDamageMultiplier: 10, // урон = stats.dmg * (1+dmgPct/100) * 10
 };
 
 export const GUILD_BOSSES = [
-  { id: "inferno_dragon", name: "Инфернальный Дракон", hp: 1000000, armor: 50, icon: "dragon" },
-  { id: "abyss_lord", name: "Владыка Бездны", hp: 2500000, armor: 80, icon: "skull" },
-  { id: "frost_giant", name: "Ледяной Великан", hp: 1800000, armor: 100, icon: "snow" },
-  { id: "shadow_queen", name: "Королева Теней", hp: 3000000, armor: 60, icon: "crown" },
+  { id: "inferno_dragon", name: "Инфернальный Дракон", hp: 120000, armor: 50, icon: "dragon", dmg: 300 },
+  { id: "abyss_lord", name: "Владыка Бездны", hp: 280000, armor: 80, icon: "skull", dmg: 500 },
+  { id: "frost_giant", name: "Ледяной Великан", hp: 180000, armor: 100, icon: "snow", dmg: 400 },
+  { id: "shadow_queen", name: "Королева Теней", hp: 450000, armor: 60, icon: "crown", dmg: 600 },
 ];
+
+export const GUILD_BOSS_CONFIG_UPDATED = {
+  durationHours: 24,
+  maxParticipants: 30,
+  bossAttackInterval: 5, // секунд между ударами босса
+  playerAttackInterval: 1, // секунды между атаками игрока (по AS)
+  bossDamageMin: 100,
+  bossDamageMax: 500,
+  playerDamageMultiplier: 10, // урон игрока = stats.dmg * (1+dmgPct/100) * 10
+};
 
 /* ================= BATTLE PASS CONFIG (UPDATED) ================= */
 export const BATTLE_PASS_CONFIG_UPDATED = {

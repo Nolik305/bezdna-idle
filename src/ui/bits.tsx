@@ -155,6 +155,9 @@ export function ItemRow({ it, delta, children }: { it: Item; delta?: number | nu
         <div className="text-[11px] text-dim leading-tight mt-0.5">
           <span style={{ color: c }}>{rarity.name}</span> · мощь {it.ilvl} · {Object.entries(it.stats || {}).map(([k, v]) => `${STAT_LABEL[k as keyof typeof STAT_LABEL] ?? k} +${v}`).join(", ")}
         </div>
+        {(it.sockets ?? 0) > 0 && (
+          <div className="text-[10px] text-cyan-300/90 leading-tight mt-0.5">◈ гнёзд: {it.sockets} — руны вставляются на экране «Руны»</div>
+        )}
       </div>
       {cmp && (
         <div className="flex flex-col items-center gap-0.5 shrink-0 px-1"

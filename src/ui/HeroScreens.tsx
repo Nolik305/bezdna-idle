@@ -457,6 +457,7 @@ export function InventoryTab() {
   const { s, d } = useGame();
   const items = [...s.inv].sort((a, b) => b.rarity - a.rarity || b.ilvl - a.ilvl);
   const junkCount = s.inv.filter(i => i.rarity === 0).length;
+  const hasDrill = s.inv.some(i => i.name === "Сверло «Гнездовщик»");
   return (
     <div className="flex flex-col gap-2.5">
       <div className="panel px-3 py-2.5 flex items-center gap-2">
@@ -502,6 +503,13 @@ export function InventoryTab() {
         <ItemRow key={it.uid} it={it} delta={equipDelta(s, it)}>
           <div className="flex flex-col gap-1 shrink-0">
             <button onClick={() => d({ type: "EQUIP", uid: it.uid })} className="btn btn-arc px-2.5 py-1 text-[10px]">Надеть</button>
+            {it.name === "Сверло «Гнездовщик»" ? (
+              <span className="text-[9px] text-dim text-center leading-tight">сверло: выбери цель ниже</span>
+            ) : (
+              hasDrill && (it.sockets ?? 0) < 3 && (
+                <button onClick={() => d({ type: "SOCKET_DRILL", itemUid: it.uid })} className="btn btn-gold px-2.5 py-1 text-[10px]">🪛 +гнездо</button>
+              )
+            )}
             <button onClick={() => d({ type: "SELL", uid: it.uid })} className="btn btn-dark px-2.5 py-1 text-[10px] flex items-center justify-center gap-0.5">
               <Icon n="coin" className="w-3 h-3 text-gold" filled />{it.sell}
             </button>

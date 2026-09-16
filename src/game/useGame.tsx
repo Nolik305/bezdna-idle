@@ -43,12 +43,19 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const keySyncTimer = useRef<number | null>(null);
   const flushKey = (force: boolean) => {
     if (keySyncTimer.current) { clearTimeout(keySyncTimer.current); keySyncTimer.current = null; }
-    const doPush = () => {
-      if (inVk && cloudReady.current) void saveGameState(ref.current);
-      else if (!inVk) saveGame(ref.current);
+    const doPush = async () => {
+      if (inVk && cloudReady.current) {
+        const ok = await saveGameState(ref.current);
+        // Одна повторная попытка через 5 секунд: спасает от разовых сетевых
+        // сбоев. Постоянные ошибки (конфликт ревизий) повторами не лечим —
+        // их видно по значку облака в HUD.
+        if (!ok && cloudReady.current) {
+          setTimeout(() => { if (cloudReady.current) void saveGameState(ref.current); }, 5000);
+        }
+      } else if (!inVk) saveGame(ref.current);
     };
-    if (force) doPush();
-    else keySyncTimer.current = window.setTimeout(doPush, 1200);
+    if (force) void doPush();
+    else keySyncTimer.current = window.setTimeout(() => void doPush(), 1200);
   };
   const dKey = (a: Action) => {
     d(a);

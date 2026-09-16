@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { LOGIN_REWARDS, CRAFT_RECIPES, ZONE_RESOURCES, activeSeasonalEvent, SEASONAL_EVENTS, sharpenChance, skillCost } from "./data";
-import { newGame, reducer, getStats, migrateState, itemPower, equipDelta, DEATH_WAVE_ROLLBACK, spawnEnemy } from "./logic";
+import { LOGIN_REWARDS, CRAFT_RECIPES, ZONE_RESOURCES, activeSeasonalEvent, SEASONAL_EVENTS, sharpenChance, skillCost, EXPEDITION_MAX_TIER, EXPEDITION_RUNE_RECIPES, RUNES, expeditionDef, expeditionHpMult, expeditionDmgMult, expeditionGoldMult, expeditionXpMult, expeditionShardMult, RELICS, rollSockets, GEAR_SOCKET_SLOTS, PETS, petPowerMult, PET_LEVEL_CAP, PET_STAR_CAP, RARITY } from "./data";
+import { newGame, reducer, getStats, migrateState, itemPower, equipDelta, DEATH_WAVE_ROLLBACK, spawnEnemy, spawnRunEnemy, runStats, genItem, genSetItem, genAbyssItem } from "./logic";
 
 describe("progression balance and class passives", () => {
   it("keeps late skill upgrades affordable", () => {
@@ -202,6 +202,184 @@ describe("resources & crafting", () => {
     expect(result.resources.ore).toBe(50 - 12);
   });
 
+  it("crafts an expedition rune from zone resources (rune tier = stage key)", () => {
+    const recipe = EXPEDITION_RUNE_RECIPES.find(r => r.result.value === 3)!;
+    const state = {
+      ...newGame(),
+      resources: { herb: 100, leather: 100, essence: 100 },
+    };
+    const result = reducer(state, { type: "CRAFT", id: recipe.id });
+    expect(result.runes.inventory.length).toBe(1);
+    expect(result.runes.inventory[0].tier).toBe(3);
+    expect(result.runes.inventory[0].count).toBe(1);
+    // ресурсы этапа списаны
+    expect(result.resources.herb).toBe(100 - 40);
+    expect(result.resources.essence).toBe(100 - 15);
+  });
+
+  it("refuses to craft a rune without reagents", () => {
+    const recipe = EXPEDITION_RUNE_RECIPES[0];
+    const state = { ...newGame(), resources: {} };
+    const result = reducer(state, { type: "CRAFT", id: recipe.id });
+    expect(result.runes.inventory.length).toBe(0);
+    expect(result).toBe(state); // отказ без изменений — редьюсер чистый
+  });
+
+  it("opens expedition stage I free, but demands a rune for stage II+", () => {
+    const open = reducer(newGame(), { type: "START_RUN", kind: "exp", depth: 1 });
+    expect(open.run.active).toBe(true);
+    expect(open.run.depth).toBe(1);
+    // этап II без руны — отказ с подсказкой
+    const locked = reducer({ ...newGame(), expeditionDepth: 2 }, { type: "START_RUN", kind: "exp", depth: 2 });
+    expect(locked.run.active).toBe(false);
+    // этап II с руной тира 2 — вход, руна сгорает как ключ
+    const withKey = reducer({
+      ...newGame(),
+      expeditionDepth: 2,
+      runes: { gear: {}, inventory: [{ runeId: RUNES[0].id, count: 1, tier: 2 }] },
+    }, { type: "START_RUN", kind: "exp", depth: 2 });
+    expect(withKey.run.active).toBe(true);
+    expect(withKey.run.depth).toBe(2);
+    expect(withKey.runes.inventory.length).toBe(0);
+  });
+
+  it("expedition stages scale monsters and rewards with tier", () => {
+    const t1 = spawnRunEnemy(5, "exp", 1);
+    const t8 = spawnRunEnemy(5, "exp", 8);
+    expect(t8.hp).toBeGreaterThan(t1.hp);
+    expect(t8.dmg).toBeGreaterThan(t1.dmg);
+    expect(t8.gold).toBeGreaterThan(t1.gold);
+    // тиры в допустимых границах
+    expect(expeditionDef(1).roman).toBe("I");
+    expect(expeditionDef(99).roman).toBe("VIII");
+    expect(EXPEDITION_MAX_TIER).toBe(8);
+        expect(EXPEDITION_RUNE_RECIPES.length).toBe(8);
+  });
+
+  it("expedition monster HP growth is capped at 1.6x per tier", () => {
+    expect(expeditionHpMult(1)).toBeCloseTo(1);
+    expect(expeditionHpMult(2)).toBeCloseTo(1.6);
+    expect(expeditionHpMult(5)).toBeCloseTo(Math.pow(1.6, 4));
+    expect(expeditionHpMult(8)).toBeCloseTo(Math.pow(1.6, 7));
+  });
+
+  it("expedition damage and reward multipliers are balanced", () => {
+    expect(expeditionDmgMult(1)).toBeCloseTo(1);
+    expect(expeditionDmgMult(4)).toBeCloseTo(Math.pow(1.4, 3));
+    expect(expeditionGoldMult(3)).toBeCloseTo(1.8);
+    expect(expeditionXpMult(3)).toBeCloseTo(1.5);
+    expect(expeditionShardMult(8)).toBeCloseTo(1 + 0.35 * 7);
+  });
+
+  it("relics are nerfed (no +15%+ per rank)", () => {
+    const fang = RELICS.find(r => r.id === "fang");
+    expect(fang?.dmgPct).toBe(8);
+    const cursed = RELICS.find(r => r.id === "cursed");
+    expect(cursed?.dmgPct).toBe(20);
+    expect(cursed?.hpPct).toBe(-10);
+    const magnet = RELICS.find(r => r.id === "magnet");
+    expect(magnet?.goldPct).toBe(10);
+  });
+
+  it("equipped rune stats grow with tier", () => {
+    const base = { ...newGame(), hero: { ...newGame().hero, classId: "mage" as const } };
+    const runeId = "rune_fire"; // +3% урона
+    const item = { uid: 1, base: "armor" as const, name: "t", rarity: 2 as const, ilvl: 1, stats: {}, sell: 1, sockets: 1 };
+    const withT1 = { ...base, inv: [item], runes: { gear: { 1: { uid: 1, sockets: 1, runes: [{ runeId, rank: 1 }] } }, inventory: [] } };
+    const withT4 = { ...base, inv: [item], runes: { gear: { 1: { uid: 1, sockets: 1, runes: [{ runeId, rank: 4 }] } }, inventory: [] } };
+    expect(runStats(withT4).dmg).toBeGreaterThan(runStats(withT1).dmg);
+    expect(expeditionHpMult(8)).toBeGreaterThan(expeditionHpMult(1));
+  });
+
+  it("item sockets: gray/green never, blue 15%@1, epic 30%@2, legend 50%@2, abyss 70%@3", () => {
+    expect(rollSockets(0)).toBe(0);
+    expect(rollSockets(1)).toBe(0);
+    expect(GEAR_SOCKET_SLOTS).toBe(3);
+    for (let i = 0; i < 200; i++) {
+      expect(rollSockets(2)).toBeLessThanOrEqual(1);
+      expect(rollSockets(3)).toBeLessThanOrEqual(2);
+      expect(rollSockets(4)).toBeLessThanOrEqual(2);
+      expect(rollSockets(5)).toBeLessThanOrEqual(3);
+    }
+    let seenBlue = false, seenEpic2 = false, seenAbyss3 = false;
+    for (let i = 0; i < 4000; i++) {
+      if (rollSockets(2) === 1) seenBlue = true;
+      if (rollSockets(3) === 2) seenEpic2 = true;
+      if (rollSockets(5) === 3) seenAbyss3 = true;
+    }
+    expect(seenBlue).toBe(true);
+    expect(seenEpic2).toBe(true);
+    expect(seenAbyss3).toBe(true);
+  });
+
+  it("gear item power hierarchy: abyss > legend at equal ilvl (abyss is the cap)", () => {
+    for (let i = 0; i < 50; i++) {
+      const leg = genItem(50, 4, "mage", 0, 3000 + i);
+      const abyss = genAbyssItem(50, 4000 + i, "mage", 30);
+      // Бездна — кап: фиксированно выше сгенерированной легенды того же ilvl.
+      expect(itemPower({ ...abyss, rarity: 5 } as any)).toBeGreaterThan(itemPower({ ...leg, rarity: 4 } as any));
+    }
+  });
+
+  it("abyss items scale with wave (endgame cap without runaway inflation)", () => {
+    const early = genAbyssItem(50, 1, "mage", 1);
+    const late = genAbyssItem(50, 2, "mage", 60);
+    expect(itemPower({ ...late, rarity: 5 } as any)).toBeGreaterThan(itemPower({ ...early, rarity: 5 } as any));
+    // Рост ≤ ×20 за 59 волн — иначе инфляция убивает смысл тиров.
+    const ratio = itemPower({ ...late, rarity: 5 } as any) / Math.max(1, itemPower({ ...early, rarity: 5 } as any));
+    expect(ratio).toBeLessThan(20);
+  });
+
+  it("atlas set pieces have 4 stat lines and can roll sockets (top tier loot)", () => {
+    let seenSocket = false;
+    for (let i = 0; i < 100; i++) {
+      const it = genSetItem("blood", 40, "mage", 9000 + i);
+      expect(Object.keys(it.stats).length).toBe(4);
+      expect(it.rarity).toBe(4);
+      if ((it.sockets ?? 0) > 0) seenSocket = true;
+    }
+    expect(seenSocket).toBe(true);
+  });
+
+  it("drill adds a socket via SOCKET_DRILL and refuses at cap", () => {
+    let s = newGame();
+    s.resources = { ore: 999, crystal: 999, essence: 999 };
+    s = reducer(s, { type: "CRAFT", id: "c_drill" });
+    const drill = s.inv.find(i => i.name.startsWith("Сверло"));
+    expect(drill).toBeDefined();
+    const s2in = { ...s, inv: [...s.inv, { uid: 777, base: "armor" as const, name: "Тест", rarity: 2 as const, ilvl: 10, stats: {}, sell: 1 }] };
+    const s2 = reducer(s2in, { type: "SOCKET_DRILL", itemUid: 777 });
+    expect(s2.inv.find(i => i.uid === 777)?.sockets).toBe(1);
+    expect(s2.inv.some(i => i.name.startsWith("Сверло"))).toBe(false);
+    // Второй раз без сверла — отказ.
+    const s3 = reducer(s2, { type: "SOCKET_DRILL", itemUid: 777 });
+    expect(s3.inv.find(i => i.uid === 777)?.sockets).toBe(1);
+  });
+
+  it("RUNE_INSERT requires an existing socket, RUNE_REMOVE keeps tier", () => {
+    const base = newGame();
+    const noSockets = { ...base, inv: [{ uid: 555, base: "armor" as const, name: "Без гнёзд", rarity: 2 as const, ilvl: 5, stats: {}, sell: 1 }], runes: { gear: {}, inventory: [{ runeId: RUNES[0].id, count: 1, tier: 2 }] } };
+    const denied = reducer(noSockets, { type: "RUNE_INSERT", gearUid: 555, slotIndex: 0, runeId: RUNES[0].id, tier: 2 });
+    expect(denied.runes.gear[555]).toBeUndefined();
+    // Со сверлёным гнездом — вставка проходит.
+    const withSocket = { ...noSockets, inv: [{ uid: 555, base: "armor" as const, name: "С гнездом", rarity: 2 as const, ilvl: 5, stats: {}, sell: 1, sockets: 1 }] };
+    const ok = reducer(withSocket, { type: "RUNE_INSERT", gearUid: 555, slotIndex: 0, runeId: RUNES[0].id, tier: 2 });
+    expect(ok.runes.gear[555]?.runes[0]?.runeId).toBe(RUNES[0].id);
+    expect(ok.runes.gear[555]?.runes[0]?.rank).toBe(2);
+    const back = reducer(ok, { type: "RUNE_REMOVE", gearUid: 555, slotIndex: 0 });
+    expect(back.runes.inventory.find(i => i.runeId === RUNES[0].id && i.tier === 2)?.count).toBe(1);
+  });
+
+  it("pets: dragon no longer outscales sets (power mult capped, pet % modest)", () => {
+    const dragon = PETS.find(p => p.id === "dragon_whelp")!;
+    expect((dragon.passiveBonus.dmgPct ?? 0) + (dragon.passiveBonus.hpPct ?? 0)).toBeLessThanOrEqual(8);
+    expect(dragon.lifesteal ?? 0).toBeLessThanOrEqual(2);
+    // Кап прокачки: даже 20/⭐5 не даёт больше ×3.4 суммарно (1.5 × 2.25).
+    expect(petPowerMult(PET_LEVEL_CAP, PET_STAR_CAP)).toBeLessThanOrEqual(3.4);
+    expect(petPowerMult(1, 0)).toBe(1);
+    expect(RARITY[5].name).toBe("Бездна");
+  });
+
   it("forges an item into the chosen slot via CRAFT_SLOT", () => {
     const state = {
       ...newGame(),
@@ -320,7 +498,7 @@ describe("meta altar & resource quests", () => {
     s.hero.gems = 1000;
     s.shards = 1000;
     s = reducer(s, { type: "BUY_META", id: "savant" });
-    expect(getStats(s).xpPct).toBe(8);
+        expect(getStats(s).xpPct).toBe(2);
   });
 
   it("claims the daily resource quest when threshold met", () => {

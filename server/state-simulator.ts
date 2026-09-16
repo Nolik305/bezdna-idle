@@ -3,8 +3,9 @@
  * Импортирует общую логику из shared-пакета (симлинк на src/game/).
  * Сервер — единственный авторитетный источник истины для финальных статов.
  */
-import { reducer, newGame, getStats, type GameState } from "../shared/src/game/logic.ts";
-import { getBalance } from "../shared/src/game/balanceConfig.ts";
+import { reducer, newGame, getStats } from "../src/game/logic.ts";
+import type { GameState } from "../src/game/types.ts";
+import { getBalance } from "../src/game/balanceConfig.ts";
 
 // Максимальная допустимая дельта между клиентом и сервером (ресурсы).
 const MAX_RESOURCE_DRIFT = 0.1; // 10% отклонение допустимо
@@ -133,7 +134,7 @@ function detectStateDiff(
 export function getOfflineIncome(state: GameState, seconds: number): { gold: number; xp: number } {
   const stats = getStats(state);
   const dps = stats.dps;
-  const goldRate = (dps / 10) * (1 + stats.goldPct / 100) * (1 + stats.offlinePct / 100);
+  const goldRate = (dps / 10) * (1 + stats.goldPct / 100) * (1 + stats.offline / 100);
   const goldEarned = Math.floor(goldRate * seconds);
   const xpEarned = Math.floor(20 * (1 + state.hero.level * 0.1) * seconds);
   return { gold: goldEarned, xp: xpEarned };
@@ -183,12 +184,12 @@ export function validateClientState(game: GameState): string | null {
  */
 export function isProgressSafe(game: GameState, previous: GameState | null): boolean {
   if (!previous) return true;
-  const prevHero = previous.hero || {};
-  const prevTotals = previous.totals || {};
+  const prevHero: Partial<GameState["hero"]> = previous.hero;
+  const prevTotals: Partial<GameState["totals"]> = previous.totals;
 
   // Базовые проверки
   if (game.hero.level > Number(prevHero.level || 1) + MAX_LEVEL_JUMP) return false;
-  if (game.hero.gold < 0 || game.hero.gems < 0) return false;
+  if (game.hero.gold < 0 || game.hero.gems < 0 || game.hero.potions < 0) return false;
   if (game.totals.kills < Number(prevTotals.kills || 0)) return false;
   if (game.totals.goldEarned < Number(prevTotals.goldEarned || 0)) return false;
   if (game.totals.items < Number(prevTotals.items || 0)) return false;
@@ -201,8 +202,8 @@ export function isProgressSafe(game: GameState, previous: GameState | null): boo
     "runes", "base", "social", "afkRewards",
   ];
   for (const key of newSystems) {
-    const prev = (previous as Record<string, unknown>)[key];
-    const curr = (game as Record<string, unknown>)[key];
+    const prev = (previous as unknown as Record<string, unknown>)[key];
+    const curr = (game as unknown as Record<string, unknown>)[key];
     if (prev === undefined && curr !== undefined) continue; // старый сейв
     if (prev !== undefined && curr !== undefined) {
       const prevStr = JSON.stringify(prev);
@@ -214,9 +215,11 @@ export function isProgressSafe(game: GameState, previous: GameState | null): boo
     }
   }
 
-  // Проверяем зону — не более чем +2 за тик
-  if (game.zones !== undefined && prevHero.zones !== undefined) {
-    if (game.zones > prevHero.zones + 2) return false;
+  // Проверяем зону — не более чем +2 за сохранение.
+  // ВАЖНО: zones живёт в корне состояния, а не в hero (раньше читали
+  // prevHero.zones, из-за чего проверка никогда не срабатывала).
+  if (game.zones !== undefined && previous.zones !== undefined) {
+    if (game.zones > previous.zones + 2) return false;
   }
 
   return true;

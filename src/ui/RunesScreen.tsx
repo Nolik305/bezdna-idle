@@ -62,29 +62,37 @@ export function RunesScreen() {
           <Icon n="sword" className="w-4 h-4 text-cyan-400" />
           Снаряжение с гнёздами
         </h3>
+        <p className="text-[9px] text-dim mb-3">
+          Гнёзда роллятся при дропе/ковке (синь+, шанс растёт с редкостью, у Бездны до 3).
+          Нет гнёзд — скрафти сверло «Гнездовщик» в Мастерской и просверли предмет из рюкзака.
+          Клик по пустому гнезду — вставить первую подходящую руну, клик по занятому — снять.
+        </p>
         <div className="space-y-3">
           {(Object.keys(equip) as Array<keyof typeof equip>).map((slot) => {
             const item = equip[slot];
             if (!item) return null;
+            const sockets = item.sockets ?? 0;
             const gearRunes = runes.gear[item.uid]?.runes || [];
-            const sockets = runes.gear[item.uid]?.sockets || 0;
-            
+            const hasDrill = s.inv.some(i => i.name === "Сверло «Гнездовщик»");
             return (
               <div key={slot} className="p-3 rounded-lg bg-black/20 border border-white/5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] text-fog capitalize">{slot}</span>
-                  <span className="text-[9px] text-dim">{item.name}</span>
+                  <span className="text-[9px] text-dim">{item.name}{sockets > 0 ? ` ⬥${sockets}` : ""}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   {Array.from({ length: sockets }).map((_, idx) => {
-                    const runeId = gearRunes[idx];
+                    const slotData = gearRunes[idx];
+                    const runeId = slotData?.runeId ?? null;
+                    const firstAvail = runes.inventory.find(i => i.count > 0);
                     return (
                       <button
                         key={idx}
-                        onClick={() => runeId ? 
-                          d({ type: "RUNE_REMOVE", gearUid: item.uid, slotIndex: idx }) :
-                          null
-                        }
+                        onClick={() => {
+                          if (runeId) d({ type: "RUNE_REMOVE", gearUid: item.uid, slotIndex: idx });
+                          else if (firstAvail) d({ type: "RUNE_INSERT", gearUid: item.uid, slotIndex: idx, runeId: firstAvail.runeId, tier: firstAvail.tier ?? 1 });
+                        }}
+                        title={runeId ? "Снять руну" : firstAvail ? `Вставить: ${firstAvail.runeId} (тир ${firstAvail.tier ?? 1})` : "Нет рун в инвентаре"}
                         className={`w-8 h-8 rounded border-2 flex items-center justify-center ${
                           runeId 
                             ? "border-cyan-400/50 bg-cyan-400/20" 
@@ -101,6 +109,15 @@ export function RunesScreen() {
                   })}
                   {sockets === 0 && (
                     <span className="text-[8px] text-dim">Нет гнёзд</span>
+                  )}
+                  {sockets === 0 && hasDrill && (
+                    <button
+                      className="ml-2 text-[9px] px-2 py-1 rounded border border-amber-400/40 text-amber-300 hover:bg-amber-400/10"
+                      title="Просверлить +1 гнездо"
+                      onClick={() => d({ type: "SOCKET_DRILL", itemUid: item.uid })}
+                    >
+                      🪛 Сверлить
+                    </button>
                   )}
                 </div>
               </div>

@@ -18,6 +18,7 @@ export interface Item {
   sell: number;
   abyss?: boolean; // предмет Сета Бездны
   set?: string; // id сета (атлас)
+  sockets?: number; // гнёзда под руны (роллятся при генерации, сверлятся сверлом)
 }
 
 export interface Enemy {
@@ -309,7 +310,7 @@ export interface GuildBossS {
   maxHp: number;
   name: string;
   level: number;
-  timeElapsed: number;
+  timeElapsed: number; // секунд с начала рейда
   personalDamage: number;
   attacksLeft: number;
   expiresAt: number; // timestamp окончания (24 часа)
@@ -319,6 +320,14 @@ export interface GuildBossS {
   rewardClaimed: boolean;
   claimed: boolean; // награда получена
   leaderboard: { name: string; damage: number; losses: number }[];
+  // === БОЕВОЙ ЦИКЛ ===
+  heroHp: number; // HP героя во время рейда
+  heroMaxHp: number;
+  bossAttackT: number; // таймер ударов босса (сек)
+  playerAttackT: number; // таймер атак героя (сек)
+  isFighting: boolean; // идёт ли бой (босс активен и HP > 0)
+  bossLocked: boolean; // босс отбит — нужен ручной ревив
+  rewardRuneId: string | null; // руна-награда за рейд
 }
 
 export interface BattlePassMission {
@@ -386,7 +395,7 @@ export interface GearWithRunes {
 
 export interface RunesS {
   gear: Record<number, GearWithRunes>; // привязка рун к UID предмета
-  inventory: { runeId: string; count: number }[];
+  inventory: { runeId: string; count: number; tier?: number }[]; // tier = уровень руны (1..8), определяет силу и тир Экспедиции
 }
 
 export interface BaseBuilding {
@@ -465,6 +474,7 @@ export interface GameState {
   godstone: number | null; // Камень Бога: null — не пробуждён, иначе уровень 0..∞
   duel: DuelS; // дуэли с MMR
   portalDepth: number; // открытая глубина Портала (1 = Бездна I)
+  expeditionDepth: number; // открытый этап Экспедиции (1..8), эндгейм-лестница под руны
   path: string | null; // выбранное восхождение (ascendancy)
   pathXp: number; // опыт атласа (1 очко = 1 уровень пути)
   atlas: Record<string, number>; // ранги узлов атласа (nodeId -> rank)
@@ -578,10 +588,12 @@ export type Action =
   | { type: "PET_EQUIP"; petId: string }
   | { type: "PET_LEVEL_UP"; petId: string }
   | { type: "PET_FEED"; petId: string; itemId: number }
+  | { type: "PET_STAR_UP"; petId: string }
   | { type: "TOURNAMENT_FIGHT" }
   | { type: "TOURNAMENT_CLAIM_REWARD"; position: number }
-  | { type: "RUNE_INSERT"; gearUid: number; slotIndex: number; runeId: string }
+  | { type: "RUNE_INSERT"; gearUid: number; slotIndex: number; runeId: string; tier?: number }
   | { type: "RUNE_REMOVE"; gearUid: number; slotIndex: number }
+  | { type: "SOCKET_DRILL"; itemUid: number }
   | { type: "BASE_COLLECT" }
   | { type: "BASE_UPGRADE_BUILDING"; buildingId: string }
   | { type: "BASE_ASSIGN_HERO"; buildingId: string; classId: ClassId | null }

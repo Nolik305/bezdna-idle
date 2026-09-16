@@ -140,6 +140,27 @@ function Art({ k, c1, c2 }: { k: string; c1: string; c2: string }) {
       <circle cx="43" cy="48" r="1.4" fill="#22062e" /><circle cx="57" cy="48" r="1.4" fill="#22062e" />
       <path d="M45 60 Q50 64 55 60" stroke="#22062e" strokeWidth="2.5" fill="none" strokeLinecap="round" />
     </>);
+    case "inferno_dragon": return (<>
+      <path d="M20 50 Q50 10 80 50 L70 80 Q50 70 30 80 Z" fill={c1} stroke={c2} strokeWidth="3" />
+      <circle cx="40" cy="45" r="4" fill="#22252c" /><circle cx="60" cy="45" r="4" fill="#22252c" />
+      <path d="M45 55 Q50 60 55 55" stroke="#22252c" strokeWidth="2" fill="none" />
+    </>);
+    case "abyss_lord": return (<>
+      <circle cx="50" cy="50" r="30" fill={c1} stroke={c2} strokeWidth="3" />
+      <ellipse cx="40" cy="45" rx="5" ry="7" fill="#22252c" /><ellipse cx="60" cy="45" rx="5" ry="7" fill="#22252c" />
+      <path d="M45 60 Q50 65 55 60" stroke="#22252c" strokeWidth="2" fill="none" />
+    </>);
+    case "frost_giant": return (<>
+      <path d="M50 20 L80 80 L20 80 Z" fill={c1} stroke={c2} strokeWidth="3" />
+      <circle cx="40" cy="50" r="4" fill="#22252c" /><circle cx="60" cy="50" r="4" fill="#22252c" />
+      <path d="M45 60 Q50 65 55 60" stroke="#22252c" strokeWidth="2" fill="none" />
+    </>);
+    case "shadow_queen": return (<>
+      <path d="M20 80 Q50 20 80 80 Z" fill={c1} stroke={c2} strokeWidth="3" />
+      <circle cx="40" cy="40" r="4" fill="#22252c" /><circle cx="60" cy="40" r="4" fill="#22252c" />
+      <path d="M45 50 Q50 55 55 50" stroke="#22252c" strokeWidth="2" fill="none" />
+    </>);
+
     default: return (<>
       <circle cx="50" cy="52" r="28" fill={c1} stroke={c2} strokeWidth="3" />
       <circle cx="41" cy="48" r="4" fill="#22252c" /><circle cx="59" cy="48" r="4" fill="#22252c" />

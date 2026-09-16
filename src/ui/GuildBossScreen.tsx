@@ -1,9 +1,11 @@
+import { GuildBossBattleScene } from "./GuildBossBattleScene";
+
 import { useGame } from "../game/useGame";
 import type { Dispatch } from "react";
 import type { Action, GuildBossS, Stats } from "../game/types";
 import { Icon } from "./bits";
 import { fmt } from "../game/logic";
-import { GUILD_BOSS_CONFIG } from "../game/data";
+import { GUILD_BOSS_CONFIG_UPDATED } from "../game/data";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // --- Вспомогательный компонент: летающий урон ---
@@ -145,7 +147,7 @@ function ActiveGuildBoss({ gb, d, stats }: { gb: GuildBossS; d: Dispatch<Action>
   // --- Обработчик атаки героя ---
   const handleHeroAttack = useCallback(() => {
     d({ type: "GUILD_BOSS_ATTACK" });
-    const dmg = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG.playerDamageMultiplier);
+    const dmg = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier);
     addFloatingDmg(dmg);
     triggerFlash("rgba(255, 100, 100, 0.15)", 0.2);
     triggerShake(3);
@@ -183,8 +185,8 @@ function ActiveGuildBoss({ gb, d, stats }: { gb: GuildBossS; d: Dispatch<Action>
   const canClaim = gb.rewardPending && !gb.rewardClaimed;
   const isBossDead = gb.hp <= 0;
   const isHeroDead = gb.heroHp <= 0;
-  const bossNextAttack = gb.bossAttackT > 0 ? GUILD_BOSS_CONFIG.bossAttackInterval - gb.bossAttackT : 0;
-  const playerDps = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG.playerDamageMultiplier);
+  const bossNextAttack = gb.bossAttackT > 0 ? GUILD_BOSS_CONFIG_UPDATED.bossAttackInterval - gb.bossAttackT : 0;
+  const playerDps = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier);
   const timeLeft = Math.max(0, 24 * 3600 - gb.timeElapsed);
   const hoursLeft = Math.floor(timeLeft / 3600);
   const minutesLeft = Math.floor((timeLeft % 3600) / 60);
@@ -349,7 +351,7 @@ function ActiveGuildBoss({ gb, d, stats }: { gb: GuildBossS; d: Dispatch<Action>
             {comboCount >= 2 && <span className="text-red-400">🔥 x{comboCount}</span>}
           </div>
           <p className="text-[9px] text-dim mt-1">
-            Босс атакует каждые {GUILD_BOSS_CONFIG.bossAttackInterval}с. Наносит {fmt(gb.bossDmg)} урона.
+            Босс атакует каждые {GUILD_BOSS_CONFIG_UPDATED.bossAttackInterval}с. Наносит {fmt(gb.bossDmg)} урона.
           </p>
         </div>
       )}
@@ -366,7 +368,7 @@ function ActiveGuildBoss({ gb, d, stats }: { gb: GuildBossS; d: Dispatch<Action>
         >
           <Icon n="sword" className="w-6 h-6 text-red-400 group-hover:text-red-300" />
           <span className="text-lg font-display text-fog group-hover:text-red-300">АТАКОВАТЬ</span>
-          <span className="text-[10px] text-dim">(+{fmt(Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG.playerDamageMultiplier))} урона)</span>
+          <span className="text-[10px] text-dim">(+{fmt(Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier))} урона)</span>
         </button>
       )}
 
@@ -419,7 +421,7 @@ function ActiveGuildBoss({ gb, d, stats }: { gb: GuildBossS; d: Dispatch<Action>
       {/* Info */}
       <div className="panel p-3 text-center">
         <p className="text-[9px] text-dim">
-          💡 Босс атакует каждые {GUILD_BOSS_CONFIG.bossAttackInterval}с. Ваш урон: stats.dmg × (1+dmgPct/100) × {GUILD_BOSS_CONFIG.playerDamageMultiplier}
+          💡 Босс атакует каждые {GUILD_BOSS_CONFIG_UPDATED.bossAttackInterval}с. Ваш урон: stats.dmg × (1+dmgPct/100) × {GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier}
         </p>
         <p className="text-[9px] text-dim mt-1">
           🔄 Руны и сетовые бонусы работают! БП набирает XP за убийства. ✨ Руны выпадают с боссом!

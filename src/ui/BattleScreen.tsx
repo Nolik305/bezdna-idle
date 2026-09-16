@@ -54,7 +54,7 @@ export function BattleScreen() {
   }, [B.fx]);
 
   const skills = SKILLS.filter(k => k.classId === s.hero.classId);
-  const toBoss = 10 - (B.wave % 10 === 0 ? 10 : B.wave % 10);
+  const toBoss = B.wave % 10 === 0 ? 0 : 10 - (B.wave % 10);
   const skillsUsed = s.hero.skillPoints > 0;
 
   return (
@@ -148,7 +148,7 @@ export function BattleScreen() {
                 <div className="absolute inset-x-0 top-0 h-1/2 bg-white/15" />
               </div>
               <div className="flex items-center justify-between mt-1.5 text-[10px] text-dim">
-                <span>{e.boss ? "Главарь зоны. Дроп x2, нервы x0.5" : zone.endless ? "Бездна бесконечна, как понедельник" : `До босса: ${toBoss === 10 ? "это босс!" : toBoss + " волн"}`}</span>
+                <span>{e.boss ? "Главарь зоны. Дроп x2, нервы x0.5" : zone.endless ? "Бездна бесконечна, как понедельник" : `До босса: ${toBoss === 0 ? "это босс!" : toBoss + " волн"}`}</span>
                 <span className="tabular-nums">+{fmt(e.gold)} зол. · +{fmt(e.xp)} оп.</span>
               </div>
             </>

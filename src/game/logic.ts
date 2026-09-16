@@ -17,14 +17,14 @@ import {
   // === НОВЫЕ ИМПОРТЫ ===
   PRESTIGE_CONFIG, PRESTIGE_BONUSES, PRESTIGE_TALENTS,
   BESTIARY_BONUSES,
-  BATTLE_PASS_CONFIG, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM,
+  BATTLE_PASS_CONFIG, BATTLE_PASS_CONFIG_UPDATED, BATTLE_PASS_REWARDS_FREE, BATTLE_PASS_REWARDS_PREMIUM,
   PETS, petPowerMult, PET_LEVEL_CAP, PET_STAR_CAP, petStarCost,
   RUNES, RUNE_SETS,
   BASE_BUILDINGS,
   TOURNAMENT_CONFIG, TOURNAMENT_REWARDS,
-  GUILD_BOSSES, GUILD_BOSS_CONFIG,
+  GUILD_BOSSES, GUILD_BOSS_CONFIG_UPDATED,
 } from "./data";
-import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, GuildBossS, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
+import type { Action, BaseSlot, Buff, ClassId, DuelFoe, DuelS, Enemy, GameState, GuildBossS, Fx, Item, PartyBotProfile, PartyS, RunS, Slot, StatKey, Stats } from "./types";
 import { getCustomSets, getCustomItems, rollCustomItem, getCustomItemById, getCustomSetById } from "./customContent";
 import { autoIlvl, getBalance, getDropPools, statValue, statRoll } from "./balanceConfig";
 
@@ -541,7 +541,7 @@ export function spawnEnemy(zone: number, wave: number, bossLocked = false): Enem
   const depthReward = Math.pow(1.018, Math.max(0, p - 1));
   const xp = Math.round((7 + zone * 7 + wave * 1.6) * depthReward * (boss ? 9 : 1));
   const r = Math.round(hp);
-  return { key, name: MOBS[key]?.n ?? key, hp: r, maxHp: r, dmg, as: boss ? 0.6 : 0.85, boss, gold, xp };
+  return { key, name: MOBS[key]?.n ?? key, hp: hp, maxHp: hp, dmg, as: boss ? 0.6 : 0.85, boss, gold, xp };
 }
 
 function spawnParty(dun: typeof DUNGEONS[number], stats: Stats, heroLevel: number, profiles: PartyBotProfile[] = []): PartyS {
@@ -730,7 +730,7 @@ export function spawnRunEnemy(wave: number, kind: "exp" | "portal" = "exp", dept
   const expGold = kind === "exp" ? expeditionGoldMult(expTier) : 1;
   const gold = Math.round((10 + wave * 3) * (boss ? 8 : 1) * (0.9 + Math.random() * 0.2) * (kind === "portal" ? 1.6 * depth : expGold));
   const r = Math.round(hp);
-  return { key, name: MOBS[key]?.n ?? key, hp: r, maxHp: r, dmg, as: boss ? 0.55 : 0.9, boss, gold, xp: 0 };
+  return { key, name: MOBS[key]?.n ?? key, hp: hp, maxHp: hp, dmg, as: boss ? 0.55 : 0.9, boss, gold, xp: 0 };
 }
 
 /** предмет Сета Бездны (редкость «Бездна», кап: ilvl-шкала ×4.4 + рост от волны + до 3 гнёзд) */
@@ -2339,8 +2339,8 @@ export function reducer(s: GameState, a: Action): GameState {
       const stats = getStats(s);
       const isCrit = Math.random() * 100 < stats.crit;
       const critMult = isCrit ? stats.critDmg / 100 : 0;
-      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG.playerDamageMultiplier * (1 + critMult));
-      const newHp = Math.max(0, gb.bossHp - damage);
+      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier * (1 + critMult));
+      const newHp = Math.max(0, gb.hp - damage);
       const newPersonalDamage = gb.personalDamage + damage;
       const newGuildDamage = gb.guildDamage + damage;
       
@@ -2352,7 +2352,7 @@ export function reducer(s: GameState, a: Action): GameState {
         .sort((a, b) => b.damage - a.damage);
       
       const newFx: Fx[] = [
-        { id: Date.now(), text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: isCrit ? "crit" : "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
+        { id: Date.now(), text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: (isCrit ? "crit" : "dmg") as "crit" | "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
         ...gb.fx
       ].slice(0, 14);
 
@@ -2403,7 +2403,7 @@ export function reducer(s: GameState, a: Action): GameState {
       }
       
       let rewardRuneId: string | null = null;
-      let newState = {
+      let newState: GameState = {
         ...s,
         hero: { ...s.hero, gold: s.hero.gold + goldReward },
         guildBoss: {
@@ -2427,14 +2427,14 @@ export function reducer(s: GameState, a: Action): GameState {
           } else {
             newState.runes.inventory = [...newState.runes.inventory, { runeId: runeDef.id, count: 1, tier: raidTier }];
           }
-          newState.guildBoss!.rewardRuneId = rewardRuneId;
+          if (newState.guildBoss) newState.guildBoss.rewardRuneId = rewardRuneId;
           toast(newState, `Награда рейда: руна ${runeDef.name} тира ${raidTier}!`, "gem");
         }
       }
 
       // 2. Item (10% chance)
       if (Math.random() < 0.1) {
-        const newItem = genItem(gb.level, gb.level);
+        const newItem = genItem(gb.level, gb.level, s.hero.classId as ClassId, getStats(s).luck, s.uidSeq);
         if (newItem) {
           newState.inv = [...newState.inv, newItem];
           toast(newState, `Награда рейда: ${newItem.name}!`, "gem");
@@ -2851,8 +2851,8 @@ function tick(s: GameState, dt: number): GameState {
   if (gb && gb.active && !gb.claimed) {
     const gbStats = getStats(st);
     const now = Date.now();
-    const bossAttackInterval = GUILD_BOSS_CONFIG.bossAttackInterval;
-    const dmgMult = GUILD_BOSS_CONFIG.playerDamageMultiplier;
+    const bossAttackInterval = GUILD_BOSS_CONFIG_UPDATED.bossAttackInterval;
+    const dmgMult = GUILD_BOSS_CONFIG_UPDATED.playerDamageMultiplier;
     const playerName = st.hero.name || "Игрок";
 
     const updated: GuildBossS = { ...gb, timeElapsed: gb.timeElapsed + dt };
@@ -2881,7 +2881,7 @@ function tick(s: GameState, dt: number): GameState {
 
         // Эффекты и логи (fx и log)
         const newFx: Fx[] = [
-          { id: Date.now() + swings, text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: isCrit ? "crit" : "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
+          { id: Date.now() + swings, text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: (isCrit ? "crit" : "dmg") as "crit" | "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
           ...updated.fx
         ].slice(0, 14);
         updated.fx = newFx;

@@ -37,6 +37,13 @@ export function getSaveKey(vkUserId?: number): string {
   return vkUserId ? `bezdna-idle-save-v1-${vkUserId}` : "bezdna-idle-save-v1";
 }
 export const AUTO_SELL_RATE = 0.5;
+export function itemSellValue(item: Partial<Item>): number {
+  const sell = Number(item.sell);
+  if (Number.isFinite(sell) && sell > 0) return Math.max(1, Math.round(sell));
+  const rarity = Number.isInteger(item.rarity) && Number(item.rarity) >= 0 && Number(item.rarity) <= 5 ? Number(item.rarity) : 0;
+  const ilvl = Number.isFinite(Number(item.ilvl)) && Number(item.ilvl) > 0 ? Number(item.ilvl) : 0;
+  return Math.max(1, Math.round(Math.pow(rarity + 1, 2.1) * 9 + ilvl * 1.4));
+}
 export const SLOTS: Slot[] = ["weapon", "helm", "amulet", "armor", "gloves", "boots", "ring1", "ring2"];
 export const xpNeed = (level: number) => Math.floor(50 * Math.pow(level, 1.55));
 
@@ -583,7 +590,7 @@ function spawnParty(dun: typeof DUNGEONS[number], stats: Stats, heroLevel: numbe
 
 function autoSellItem(st: GameState, item: Item): boolean {
   if (!st.autoSellRarities?.[String(item.rarity)]) return false;
-  const value = Math.max(1, Math.round(item.sell * AUTO_SELL_RATE));
+  const value = Math.max(1, Math.round(itemSellValue(item) * AUTO_SELL_RATE));
   st.hero.gold += value;
   st.totals.goldEarned += value;
   toast(st, `Автопродажа: ${item.name} за ${value} зол.`, "gold");
@@ -1616,16 +1623,18 @@ export function reducer(s: GameState, a: Action): GameState {
     case "SELL": {
       const it = s.inv.find(i => i.uid === a.uid);
       if (!it) return s;
-      const st = { ...s, inv: s.inv.filter(i => i.uid !== a.uid), hero: { ...s.hero, gold: s.hero.gold + it.sell }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + it.sell } };
-      toast(st, `Продано за ${it.sell} зол.`, "gold");
+      const sell = itemSellValue(it);
+      const st = { ...s, inv: s.inv.filter(i => i.uid !== a.uid), hero: { ...s.hero, gold: s.hero.gold + sell }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + sell } };
+      toast(st, `Продано за ${sell} зол.`, "gold");
       return st;
     }
 
     case "SELL_JUNK": {
-      const junk = s.inv.filter(i => i.rarity === 0);
-      if (!junk.length) { const st = { ...s }; toast(st, "Серого хлама нет", "info"); return st; }
-      const sum = junk.reduce((acc, i) => acc + i.sell, 0);
-      const st = { ...s, inv: s.inv.filter(i => i.rarity !== 0), hero: { ...s.hero, gold: s.hero.gold + sum }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + sum } };
+      const junk = s.inv.filter(i => i.rarity === 0 || !!s.autoSellRarities?.[String(i.rarity)]);
+      if (!junk.length) { const st = { ...s }; toast(st, "Подходящего хлама нет", "info"); return st; }
+      const sum = junk.reduce((acc, i) => acc + itemSellValue(i), 0);
+      const junkIds = new Set(junk.map(i => i.uid));
+      const st = { ...s, inv: s.inv.filter(i => !junkIds.has(i.uid)), hero: { ...s.hero, gold: s.hero.gold + sum }, totals: { ...s.totals, goldEarned: s.totals.goldEarned + sum } };
       toast(st, `Продано ${junk.length} шт. хлама за ${sum} зол.`, "gold");
       return st;
     }
@@ -3080,9 +3089,14 @@ export function migrateState(input: GameState): GameState {
   // Берём отсутствующие поля из эталонного newGame().
   const ref = newGame();
   if (!s.inv) s.inv = [];
+  s.inv = s.inv.map(item => ({ ...item, sell: itemSellValue(item) }));
   if (!s.skills) s.skills = {};
   if (!s.passives) s.passives = {};
   if (!s.equip) s.equip = ref.equip;
+  for (const slot of SLOTS) {
+    const item = s.equip[slot];
+    if (item) s.equip[slot] = { ...item, sell: itemSellValue(item) };
+  }
   if (!s.totals) s.totals = { ...ref.totals };
   if (!s.hero) s.hero = { ...ref.hero };
   if (s.hero.gold == null) s.hero.gold = 100;

@@ -134,6 +134,34 @@ describe("resources & crafting", () => {
     expect(hydrated.resources).toEqual({ herb: 7, wood: 3 });
   });
 
+  it("repairs broken item sell prices before selling", () => {
+    const save = newGame() as any;
+    save.inv = [{ uid: 901, base: "armor", name: "Битый предмет", rarity: 0, ilvl: 1, stats: {}, sell: null }];
+    const migrated = migrateState(save);
+    expect(migrated.inv[0].sell).toBeGreaterThan(0);
+
+    const sold = reducer(migrated, { type: "SELL", uid: 901 });
+    expect(sold.inv).toHaveLength(0);
+    expect(sold.hero.gold).toBeGreaterThan(newGame().hero.gold);
+    expect(Number.isFinite(sold.hero.gold)).toBe(true);
+  });
+
+  it("sells gray loot and selected auto-sell rarities as junk", () => {
+    const state = {
+      ...newGame(),
+      autoSellRarities: { "1": true },
+      inv: [
+        { uid: 902, base: "armor" as const, name: "Серый", rarity: 0 as const, ilvl: 1, stats: {}, sell: 10 },
+        { uid: 903, base: "armor" as const, name: "Выбранный", rarity: 1 as const, ilvl: 1, stats: {}, sell: 20 },
+        { uid: 904, base: "armor" as const, name: "Оставить", rarity: 2 as const, ilvl: 1, stats: {}, sell: 30 },
+      ],
+    };
+    const sold = reducer(state, { type: "SELL_JUNK" });
+    expect(sold.inv.map(item => item.uid)).toEqual([904]);
+    expect(sold.hero.gold).toBe(newGame().hero.gold + 30);
+    expect(Number.isFinite(sold.hero.gold)).toBe(true);
+  });
+
   it("fills partially saved pet and social state", () => {
     const save = newGame() as any;
     save.pet = {};

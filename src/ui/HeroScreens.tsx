@@ -456,7 +456,7 @@ export function HeroTab() {
 export function InventoryTab() {
   const { s, d } = useGame();
   const items = [...s.inv].sort((a, b) => b.rarity - a.rarity || b.ilvl - a.ilvl);
-  const junkCount = s.inv.filter(i => i.rarity === 0).length;
+  const junkCount = s.inv.filter(i => i.rarity === 0 || !!s.autoSellRarities?.[String(i.rarity)]).length;
   const hasDrill = s.inv.some(i => i.name === "Сверло «Гнездовщик»");
   return (
     <div className="flex flex-col gap-2.5">

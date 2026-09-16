@@ -1630,7 +1630,7 @@ export function reducer(s: GameState, a: Action): GameState {
     }
 
     case "SELL_JUNK": {
-      const junk = s.inv.filter(i => i.rarity === 0 || !!s.autoSellRarities?.[String(i.rarity)]);
+      const junk = s.inv.filter(i => !i.isTool && (i.rarity === 0 || !!s.autoSellRarities?.[String(i.rarity)]));
       if (!junk.length) { const st = { ...s }; toast(st, "Подходящего хлама нет", "info"); return st; }
       const sum = junk.reduce((acc, i) => acc + itemSellValue(i), 0);
       const junkIds = new Set(junk.map(i => i.uid));
@@ -1756,7 +1756,7 @@ export function reducer(s: GameState, a: Action): GameState {
       } else if (r.kind === "drill") {
         // Сверло «Гнездовщик»: падает в инвентарь, применяется через SOCKET_DRILL.
         st.uidSeq += 1;
-        const drill: Item = { uid: st.uidSeq, base: "amulet", name: "Сверло «Гнездовщик»", rarity: 2, ilvl: 0, stats: {}, sell: 150, sockets: 0 };
+        const drill: Item = { uid: st.uidSeq, base: "amulet", name: "Сверло «Гнездовщик»", rarity: 5, ilvl: 0, stats: {}, sell: 150, sockets: 0, isTool: true };
         if (st.inv.length >= INV_CAP) {
           st.hero.gold += drill.sell; st.totals.goldEarned += drill.sell;
           toast(st, "Рюкзак полон — сверло сразу продано", "gold");
@@ -2326,25 +2326,24 @@ export function reducer(s: GameState, a: Action): GameState {
         isFighting: true,
         bossLocked: false,
         rewardRuneId: null,
+        fx: [],
+        log: [],
       };
       return { ...s, guildBoss: boss };
     }
-    
+
     case "GUILD_BOSS_ATTACK": {
       const gb = s.guildBoss;
-      if (!gb || !gb.active || gb.claimed) return s;
-      if (gb.hp <= 0) return s;
-      if (!gb.isFighting) return s;
+      if (!gb || !gb.active || gb.claimed || gb.hp <= 0 || !gb.isFighting) return s;
       
       const stats = getStats(s);
-      const dmgMult = GUILD_BOSS_CONFIG.playerDamageMultiplier;
-      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * dmgMult);
+      const isCrit = Math.random() * 100 < stats.crit;
+      const critMult = isCrit ? stats.critDmg / 100 : 0;
+      const damage = Math.round(stats.dmg * (1 + stats.dmgPct / 100) * GUILD_BOSS_CONFIG.playerDamageMultiplier * (1 + critMult));
       const newHp = Math.max(0, gb.bossHp - damage);
       const newPersonalDamage = gb.personalDamage + damage;
       const newGuildDamage = gb.guildDamage + damage;
       
-      // Обновление лидерборда. ВАЖНО: копируем записи, а не мутируем объекты
-      // предыдущего состояния — иначе редьюсер перестаёт быть чистым.
       const playerName = s.hero.name || "Игрок";
       const hasEntry = (gb.leaderboard || []).some(e => e.name === playerName);
       const leaderboard = (gb.leaderboard || [])
@@ -2352,20 +2351,29 @@ export function reducer(s: GameState, a: Action): GameState {
         .concat(hasEntry ? [] : [{ name: playerName, damage, losses: 0 }])
         .sort((a, b) => b.damage - a.damage);
       
-      // Проверка смерти босса
-      const bossDead = newHp <= 0;
+      const newFx: Fx[] = [
+        { id: Date.now(), text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: isCrit ? "crit" : "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
+        ...gb.fx
+      ].slice(0, 14);
+
+      const newLog = [`Вы нанесли ${fmt(damage)}${isCrit ? " (КРИТ!)" : ""}`, ...gb.log].slice(0, 5);
       
+      const bossDead = newHp <= 0;
+
       return {
         ...s,
+        totals: { ...s.totals, dmgDealt: s.totals.dmgDealt + damage },
         guildBoss: {
           ...gb,
-          hp: newHp,
           bossHp: newHp,
+          hp: newHp,
           personalDamage: newPersonalDamage,
-          damageDealt: newPersonalDamage, // для совместимости
+          damageDealt: newPersonalDamage,
           guildDamage: newGuildDamage,
-          attacksLeft: gb.attacksLeft > 0 ? gb.attacksLeft - 1 : gb.attacksLeft,
           leaderboard,
+          fx: newFx,
+          log: newLog,
+          attacksLeft: gb.attacksLeft > 0 ? gb.attacksLeft - 1 : gb.attacksLeft,
           rewardPending: bossDead ? true : gb.rewardPending,
           isFighting: bossDead ? false : gb.isFighting,
         },
@@ -2373,59 +2381,66 @@ export function reducer(s: GameState, a: Action): GameState {
     }
     
     case "GUILD_BOSS_CLAIM": {
-      if (!s.guildBoss || !s.guildBoss.active || s.guildBoss.claimed) return s;
+      const gb = s.guildBoss;
+      if (!gb || !gb.active || gb.claimed) return s;
       
-      // Можно забрать награду, если босс мёртв ИЛИ время вышло
       const now = Date.now();
-      const timeExpired = now >= s.guildBoss.expiresAt;
-      const bossDead = s.guildBoss.hp <= 0;
+      const timeExpired = now >= gb.expiresAt;
+      const bossDead = gb.hp <= 0;
       
-      if (!bossDead && !timeExpired) return s; // ещё рано
+      if (!bossDead && !timeExpired) return s;
       
-      // Расчет награды пропорционально вкладу игрока
-      let reward = 0;
-      if (s.guildBoss.guildDamage > 0 && s.guildBoss.personalDamage > 0) {
-        const totalReward = 5000 * s.guildBoss.level; // базовая награда * уровень босса
-        reward = Math.floor((s.guildBoss.personalDamage / s.guildBoss.guildDamage) * totalReward);
+      let goldReward = 0;
+      if (gb.guildDamage > 0 && gb.personalDamage > 0) {
+        const totalReward = 5000 * gb.level;
+        goldReward = Math.floor((gb.personalDamage / gb.guildDamage) * totalReward);
       }
       
-      // Бонус за топ-1 в лидерборде
-      const isTop1 = s.guildBoss.leaderboard && s.guildBoss.leaderboard.length > 0 && 
-                     s.guildBoss.leaderboard[0].name === (s.hero.name || "Игрок");
+      const isTop1 = gb.leaderboard && gb.leaderboard.length > 0 && 
+                     gb.leaderboard[0].name === (s.hero.name || "Игрок");
       if (isTop1) {
-        reward = Math.floor(reward * 1.2); // +20% бонус
+        goldReward = Math.floor(goldReward * 1.2);
       }
       
-      // === РУНА НАГРАДА ЗА РЕЙД: тир руны растёт с силой рейда ===
-      // Тир = min(8, 1 + floor(уровень босса / 3)): чем сильнее рейд, тем
-      // ценнее руна. В инвентаре руны хранятся с тиром (см. крафт рун).
       let rewardRuneId: string | null = null;
-      const raidTier = Math.min(EXPEDITION_MAX_TIER, 1 + Math.floor((s.guildBoss.level || 1) / 3));
+      let newState = {
+        ...s,
+        hero: { ...s.hero, gold: s.hero.gold + goldReward },
+        guildBoss: {
+          ...gb,
+          claimed: true,
+          rewardClaimed: true,
+          rewardPending: false,
+          rewardRuneId: null, // will be set if rune is won
+        }
+      };
+
+      // 1. Rune (40% chance)
+      const raidTier = Math.min(EXPEDITION_MAX_TIER, 1 + Math.floor((gb.level || 1) / 3));
       if (Math.random() < 0.4) {
         const runeDef = RUNES[Math.floor(Math.random() * RUNES.length)];
         if (runeDef) {
           rewardRuneId = runeDef.id;
-          const existingRune = s.runes.inventory.find(i => i.runeId === runeDef.id && (i.tier ?? 1) === raidTier);
-          if (existingRune) {
-            s.runes.inventory = s.runes.inventory.map(i => (i.runeId === runeDef.id && (i.tier ?? 1) === raidTier ? { ...i, count: i.count + 1 } : i));
+          const existingRuneIdx = newState.runes.inventory.findIndex(i => i.runeId === runeDef.id && (i.tier ?? 1) === raidTier);
+          if (existingRuneIdx !== -1) {
+            newState.runes.inventory = newState.runes.inventory.map(i => (i.runeId === runeDef.id && (i.tier ?? 1) === raidTier ? { ...i, count: i.count + 1 } : i));
           } else {
-            s.runes.inventory = [...s.runes.inventory, { runeId: runeDef.id, count: 1, tier: raidTier }];
+            newState.runes.inventory = [...newState.runes.inventory, { runeId: runeDef.id, count: 1, tier: raidTier }];
           }
-          toast(s, `Награда рейда: руна ${runeDef.name} тира ${raidTier}!`, "gem");
+          newState.guildBoss!.rewardRuneId = rewardRuneId;
+          toast(newState, `Награда рейда: руна ${runeDef.name} тира ${raidTier}!`, "gem");
         }
       }
 
-      const newState = {
-        ...s,
-        guildBoss: {
-          ...s.guildBoss,
-          claimed: true,
-          rewardClaimed: true,
-          rewardPending: false,
-          rewardRuneId,
-        },
-        hero: { ...s.hero, gold: s.hero.gold + reward },
-      };
+      // 2. Item (10% chance)
+      if (Math.random() < 0.1) {
+        const newItem = genItem(gb.level, gb.level);
+        if (newItem) {
+          newState.inv = [...newState.inv, newItem];
+          toast(newState, `Награда рейда: ${newItem.name}!`, "gem");
+        }
+      }
+
       return newState;
     }
     
@@ -2852,12 +2867,27 @@ function tick(s: GameState, dt: number): GameState {
       while (updated.playerAttackT >= 1 && updated.hp > 0 && swings < 20) {
         swings += 1;
         updated.playerAttackT -= 1;
-        const damage = Math.round(gbStats.dmg * (1 + gbStats.dmgPct / 100) * dmgMult);
+        
+        // Расчет крита
+        const isCrit = Math.random() * 100 < gbStats.crit;
+        const critMult = isCrit ? gbStats.critDmg / 100 : 0;
+        const damage = Math.round(gbStats.dmg * (1 + gbStats.dmgPct / 100) * dmgMult * (1 + critMult));
+        
         updated.hp = Math.max(0, updated.hp - damage);
         updated.personalDamage += damage;
         updated.guildDamage += damage;
         updated.damageDealt = updated.personalDamage;
         updated.bossHp = updated.hp;
+
+        // Эффекты и логи (fx и log)
+        const newFx: Fx[] = [
+          { id: Date.now() + swings, text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: isCrit ? "crit" : "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
+          ...updated.fx
+        ].slice(0, 14);
+        updated.fx = newFx;
+
+        const newLog = [`Вы нанесли ${fmt(damage)}${isCrit ? " (КРИТ!)" : ""}`, ...updated.log].slice(0, 5);
+        updated.log = newLog;
 
         // Копируем записи лидерборда, не мутируя объекты из прошлого состояния.
         const hasEntry = (updated.leaderboard || []).some(e => e.name === playerName);

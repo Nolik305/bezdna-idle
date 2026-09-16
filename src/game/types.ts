@@ -19,6 +19,8 @@ export interface Item {
   abyss?: boolean; // предмет Сета Бездны
   set?: string; // id сета (атлас)
   sockets?: number; // гнёзда под руны (роллятся при генерации, сверлятся сверлом)
+  isTool?: boolean; // инструмент, защищенный от автопродажи
+
 }
 
 export interface Enemy {
@@ -328,7 +330,10 @@ export interface GuildBossS {
   isFighting: boolean; // идёт ли бой (босс активен и HP > 0)
   bossLocked: boolean; // босс отбит — нужен ручной ревив
   rewardRuneId: string | null; // руна-награда за рейд
+  fx: Fx[];
+  log: string[];
 }
+
 
 export interface BattlePassMission {
   id: string;

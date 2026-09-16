@@ -2353,10 +2353,10 @@ export function reducer(s: GameState, a: Action): GameState {
       
       const newFx: Fx[] = [
         { id: Date.now(), text: isCrit ? `💥 ${fmt(damage)}` : `${fmt(damage)}`, kind: (isCrit ? "crit" : "dmg") as "crit" | "dmg", x: 40 + Math.random() * 20, y: 30 + Math.random() * 20, life: 0.95 },
-        ...gb.fx
+        ...(gb.fx || [])
       ].slice(0, 14);
 
-      const newLog = [`Вы нанесли ${fmt(damage)}${isCrit ? " (КРИТ!)" : ""}`, ...gb.log].slice(0, 5);
+      const newLog = [`Вы нанесли ${fmt(damage)}${isCrit ? " (КРИТ!)" : ""}`, ...(gb.log || [])].slice(0, 5);
       
       const bossDead = newHp <= 0;
 

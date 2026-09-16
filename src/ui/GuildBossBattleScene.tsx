@@ -16,7 +16,7 @@ export function GuildBossBattleScene({ gb }: GuildBossBattleSceneProps) {
 
   // Handle Animations
   useEffect(() => {
-    const fx = gb.fx[0];
+    const fx = gb.fx?.[0];
     if (fx && fx.id !== lastFxId.current) {
       lastFxId.current = fx.id;
       
@@ -48,7 +48,7 @@ export function GuildBossBattleScene({ gb }: GuildBossBattleSceneProps) {
           heroRef.current.classList.add("hero-hurt");
       }
     }
-  }, [gb.fx]);
+  }, [gb.fx || []]);
 
   return (
     <div className="relative w-full h-56 bg-abyss/40 rounded-2xl border border-line overflow-hidden flex items-center justify-around px-4 mb-4 select-none">
@@ -73,7 +73,7 @@ export function GuildBossBattleScene({ gb }: GuildBossBattleSceneProps) {
       </div>
 
       {/* Floating Damage Numbers */}
-      {gb.fx.map((f) => (
+      {(gb.fx || []).map((f) => (
         <div
           key={f.id}
           className={`absolute pointer-events-none font-display font-bold select-none z-20 ${
